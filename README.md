@@ -1,2 +1,3 @@
 # DNO
-Diagnostic Network optimization
+Diagnostic Network optimization made by PATH
+Author: Aswath Karunakaran
