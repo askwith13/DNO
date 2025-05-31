@@ -1,4 +1,5 @@
 from flask import Flask, render_template_string, request, jsonify, send_file, redirect, url_for, session
+from markupsafe import Markup
 import pandas as pd
 import numpy as np
 import json
@@ -19,16 +20,7 @@ import plotly.utils
 import folium
 from folium import plugins
 
-# Spatial and optimization libraries
-try:
-    import geopandas as gpd
-    from shapely.geometry import Point, Polygon
-except ImportError:
-    # Fallback if geopandas not available
-    gpd = None
-    Point = None
-    Polygon = None
-
+# Distance and optimization libraries
 from geopy.distance import geodesic
 import pulp  # For linear programming
 from scipy.spatial.distance import cdist
@@ -306,7 +298,8 @@ ABOUT_CONTENT = '''
                     <li>📈 Comprehensive results analysis</li>
                 </ul>
                 <hr>
-                <p><strong>Version:</strong> 2.0 Flask Single File Edition | <strong>Platform:</strong> Posit Connect Ready</p>
+                <p><strong>Version:</strong> 2.1 Flask Debugged Edition | <strong>Platform:</strong> Posit Connect Ready</p>
+                <p><strong>Dependencies:</strong> Removed geopandas/shapely (not used in code)</p>
             </div>
         </div>
     </div>
@@ -356,6 +349,9 @@ $(document).ready(function() {
                 } else {
                     $('#uploadStatus').html('<div class="alert alert-danger">Upload failed: ' + response.message + '</div>');
                 }
+            },
+            error: function() {
+                $('#uploadStatus').html('<div class="alert alert-danger">Upload failed: Network error</div>');
             }
         });
     });
@@ -390,12 +386,19 @@ $(document).ready(function() {
             data: JSON.stringify(params),
             success: function(response) {
                 $('#runOptimization').prop('disabled', false).html('<i class="fas fa-play"></i> Run Optimization');
+                $('.progress').hide();
                 if (response.status === 'success') {
                     $('#optimizationLogs').text(response.logs);
                     alert('Optimization completed! Check Results tab.');
                 } else {
+                    $('#optimizationLogs').text('Error: ' + response.message + '\\n\\n' + (response.logs || ''));
                     alert('Optimization failed: ' + response.message);
                 }
+            },
+            error: function() {
+                $('#runOptimization').prop('disabled', false).html('<i class="fas fa-play"></i> Run Optimization');
+                $('.progress').hide();
+                alert('Network error occurred');
             }
         });
     });
@@ -414,6 +417,8 @@ $(document).ready(function() {
                 createSummaryTable(data);
                 loadPlots();
                 createAssignmentsTable(data.results);
+            } else {
+                $('#summaryTable').html('<div class="alert alert-warning">No optimization results available. Please run optimization first.</div>');
             }
         });
     }
@@ -434,6 +439,10 @@ $(document).ready(function() {
     }
     
     function createAssignmentsTable(results) {
+        if ($.fn.DataTable.isDataTable('#resultsTable')) {
+            $('#resultsTable').DataTable().destroy();
+        }
+        
         var tableData = results.map(r => [
             r.district, r.current_assignment, r.optimized_assignment,
             r.current_travel_time.toFixed(1), r.optimized_travel_time.toFixed(1),
@@ -449,8 +458,10 @@ $(document).ready(function() {
     
     function loadPlots() {
         $.get('/generate_plots', function(data) {
-            Plotly.newPlot('utilizationPlot', JSON.parse(data.utilization_plot).data, JSON.parse(data.utilization_plot).layout);
-            Plotly.newPlot('improvementPlot', JSON.parse(data.improvement_plot).data, JSON.parse(data.improvement_plot).layout);
+            if (data.utilization_plot && data.improvement_plot) {
+                Plotly.newPlot('utilizationPlot', JSON.parse(data.utilization_plot).data, JSON.parse(data.utilization_plot).layout);
+                Plotly.newPlot('improvementPlot', JSON.parse(data.improvement_plot).data, JSON.parse(data.improvement_plot).layout);
+            }
         });
     }
 });
@@ -463,7 +474,7 @@ $(document).ready(function() {
     $.get('/generate_map', function(data) {
         $('#networkMap').html(data);
     }).fail(function() {
-        $('#networkMap').html('<div class="alert alert-warning">No optimization results available.</div>');
+        $('#networkMap').html('<div class="alert alert-warning">No optimization results available. Please upload data and run optimization first.</div>');
     });
 });
 </script>
@@ -479,6 +490,7 @@ class OptimizationLogger:
         timestamp = datetime.now().strftime("%H:%M:%S")
         log_entry = f"[{timestamp}] {log_type}: {message}"
         self.logs.append(log_entry)
+        print(log_entry)  # Also print to console for debugging
     
     def update_progress(self, progress, message=""):
         self.progress = progress
@@ -496,14 +508,20 @@ logger = OptimizationLogger()
 
 class DistanceCalculator:
     @staticmethod
-    def euclidean_distance_time(start_coords, end_coords):
-        distance_km = geodesic(start_coords, end_coords).kilometers
-        return distance_km * 2  # 30 km/h average speed
+    def euclidean_distance_time(start_coords, end_coords, avg_speed_kmh=30):
+        """Calculate travel time using geodesic distance and average speed"""
+        try:
+            distance_km = geodesic(start_coords, end_coords).kilometers
+            return (distance_km / avg_speed_kmh) * 60  # Return minutes
+        except Exception as e:
+            logger.log(f"Error calculating euclidean distance: {e}", "ERROR")
+            return 999  # Return large number if calculation fails
     
     @staticmethod
-    def openroute_service_time(start_coords, end_coords, api_key, delay=2):
+    def openroute_service_time(start_coords, end_coords, api_key, delay=1):
+        """Calculate travel time using OpenRouteService API"""
         try:
-            time.sleep(delay)
+            time.sleep(delay)  # Rate limiting
             url = "https://api.openrouteservice.org/v2/directions/driving-car"
             headers = {'Authorization': f'Bearer {api_key}', 'Content-Type': 'application/json'}
             body = {"coordinates": [[start_coords[1], start_coords[0]], [end_coords[1], end_coords[0]]]}
@@ -511,121 +529,158 @@ class DistanceCalculator:
             response = requests.post(url, headers=headers, json=body, timeout=30)
             if response.status_code == 200:
                 result = response.json()
-                return result['routes'][0]['summary']['duration'] / 60
+                return result['routes'][0]['summary']['duration'] / 60  # Convert to minutes
             else:
-                raise Exception(f"API returned status code: {response.status_code}")
+                logger.log(f"API error {response.status_code}, falling back to euclidean", "WARNING")
+                return DistanceCalculator.euclidean_distance_time(start_coords, end_coords)
         except Exception as e:
+            logger.log(f"API request failed: {e}, falling back to euclidean", "WARNING")
             return DistanceCalculator.euclidean_distance_time(start_coords, end_coords)
 
 class NetworkOptimizer:
     @staticmethod
     def linear_programming_optimization(travel_times, capacities, demands, capacity_flex=0.05):
+        """Solve using linear programming for optimal solution"""
         logger.log("Starting Linear Programming optimization")
-        n_districts, n_labs = travel_times.shape
-        
-        prob = pulp.LpProblem("LabAssignment", pulp.LpMinimize)
-        x = {}
-        for i in range(n_districts):
-            for j in range(n_labs):
-                x[i,j] = pulp.LpVariable(f"x_{i}_{j}", cat='Binary')
-        
-        # Objective function
-        prob += pulp.lpSum([travel_times[i,j] * demands[i] * x[i,j] for i in range(n_districts) for j in range(n_labs)])
-        
-        # Constraints
-        for i in range(n_districts):
-            prob += pulp.lpSum([x[i,j] for j in range(n_labs)]) == 1
-        
-        for j in range(n_labs):
-            prob += pulp.lpSum([demands[i] * x[i,j] for i in range(n_districts)]) <= capacities[j] * (1 + capacity_flex)
-        
-        prob.solve(pulp.PULP_CBC_CMD(msg=0))
-        
-        if prob.status == pulp.LpStatusOptimal:
-            assignment_matrix = np.zeros((n_districts, n_labs))
+        try:
+            n_districts, n_labs = travel_times.shape
+            
+            prob = pulp.LpProblem("LabAssignment", pulp.LpMinimize)
+            x = {}
             for i in range(n_districts):
                 for j in range(n_labs):
-                    assignment_matrix[i,j] = x[i,j].varValue
+                    x[i,j] = pulp.LpVariable(f"x_{i}_{j}", cat='Binary')
             
-            lab_loads = np.array([sum(demands[i] * assignment_matrix[i,j] for i in range(n_districts)) for j in range(n_labs)])
+            # Objective function: minimize total weighted travel time
+            prob += pulp.lpSum([travel_times[i,j] * demands[i] * x[i,j] for i in range(n_districts) for j in range(n_labs)])
             
-            return {
-                'assignment': assignment_matrix,
-                'lab_loads': lab_loads,
-                'objective_value': pulp.value(prob.objective),
-                'status': 'optimal'
-            }
-        return None
+            # Constraints
+            # Each district must be assigned to exactly one lab
+            for i in range(n_districts):
+                prob += pulp.lpSum([x[i,j] for j in range(n_labs)]) == 1
+            
+            # Lab capacity constraints
+            for j in range(n_labs):
+                prob += pulp.lpSum([demands[i] * x[i,j] for i in range(n_districts)]) <= capacities[j] * (1 + capacity_flex)
+            
+            prob.solve(pulp.PULP_CBC_CMD(msg=0))
+            
+            if prob.status == pulp.LpStatusOptimal:
+                assignment_matrix = np.zeros((n_districts, n_labs))
+                for i in range(n_districts):
+                    for j in range(n_labs):
+                        if x[i,j].varValue:
+                            assignment_matrix[i,j] = x[i,j].varValue
+                
+                lab_loads = np.array([sum(demands[i] * assignment_matrix[i,j] for i in range(n_districts)) for j in range(n_labs)])
+                
+                logger.log(f"Optimization successful! Objective value: {pulp.value(prob.objective):.2f}")
+                return {
+                    'assignment': assignment_matrix,
+                    'lab_loads': lab_loads,
+                    'objective_value': pulp.value(prob.objective),
+                    'status': 'optimal'
+                }
+            else:
+                logger.log(f"Optimization failed with status: {pulp.LpStatus[prob.status]}", "ERROR")
+                return None
+        except Exception as e:
+            logger.log(f"Linear programming failed: {e}", "ERROR")
+            return None
     
     @staticmethod
     def greedy_optimization(travel_times, capacities, demands):
+        """Solve using greedy heuristic for fast approximate solution"""
         logger.log("Starting Greedy optimization")
-        n_districts, n_labs = travel_times.shape
-        assignments = np.full(n_districts, -1)
-        remaining_capacity = capacities.copy()
-        
-        demand_order = np.argsort(demands)[::-1]
-        
-        for i in demand_order:
-            lab_order = np.argsort(travel_times[i, :])
-            assigned = False
-            for j in lab_order:
-                if remaining_capacity[j] >= demands[i]:
-                    assignments[i] = j
-                    remaining_capacity[j] -= demands[i]
-                    assigned = True
-                    break
+        try:
+            n_districts, n_labs = travel_times.shape
+            assignments = np.full(n_districts, -1)
+            remaining_capacity = capacities.copy()
             
-            if not assigned:
-                best_lab = np.argmax(remaining_capacity)
-                assignments[i] = best_lab
-                remaining_capacity[best_lab] = max(0, remaining_capacity[best_lab] - demands[i])
-        
-        assignment_matrix = np.zeros((n_districts, n_labs))
-        for i in range(n_districts):
-            if assignments[i] >= 0:
-                assignment_matrix[i, assignments[i]] = 1
-        
-        lab_loads = np.array([sum(demands[i] * assignment_matrix[i,j] for i in range(n_districts)) for j in range(n_labs)])
-        objective_value = np.sum(assignment_matrix * travel_times * demands.reshape(-1, 1))
-        
-        return {
-            'assignment': assignment_matrix,
-            'lab_loads': lab_loads,
-            'objective_value': objective_value,
-            'status': 'optimal'
-        }
+            # Sort districts by demand (largest first) for better results
+            demand_order = np.argsort(demands)[::-1]
+            
+            for i in demand_order:
+                # Sort labs by travel time for this district
+                lab_order = np.argsort(travel_times[i, :])
+                assigned = False
+                
+                for j in lab_order:
+                    if remaining_capacity[j] >= demands[i]:
+                        assignments[i] = j
+                        remaining_capacity[j] -= demands[i]
+                        assigned = True
+                        break
+                
+                # If no lab has enough capacity, assign to lab with most remaining capacity
+                if not assigned:
+                    best_lab = np.argmax(remaining_capacity)
+                    assignments[i] = best_lab
+                    remaining_capacity[best_lab] = max(0, remaining_capacity[best_lab] - demands[i])
+                    logger.log(f"District {i} assigned to overloaded lab {best_lab}", "WARNING")
+            
+            # Convert to assignment matrix
+            assignment_matrix = np.zeros((n_districts, n_labs))
+            for i in range(n_districts):
+                if assignments[i] >= 0:
+                    assignment_matrix[i, assignments[i]] = 1
+            
+            lab_loads = np.array([sum(demands[i] * assignment_matrix[i,j] for i in range(n_districts)) for j in range(n_labs)])
+            objective_value = np.sum(assignment_matrix * travel_times * demands.reshape(-1, 1))
+            
+            logger.log(f"Greedy optimization completed! Objective value: {objective_value:.2f}")
+            return {
+                'assignment': assignment_matrix,
+                'lab_loads': lab_loads,
+                'objective_value': objective_value,
+                'status': 'optimal'
+            }
+        except Exception as e:
+            logger.log(f"Greedy optimization failed: {e}", "ERROR")
+            return None
 
 # FLASK ROUTES
 @app.route('/')
 def index():
-    content = INDEX_CONTENT
-    return render_template_string(BASE_TEMPLATE, content=content, extra_scripts=COMMON_SCRIPTS)
+    from markupsafe import Markup
+    content = Markup(INDEX_CONTENT)
+    extra_scripts = Markup(COMMON_SCRIPTS)
+    return render_template_string(BASE_TEMPLATE, content=content, extra_scripts=extra_scripts)
 
 @app.route('/data_input')
 def data_input():
-    content = DATA_INPUT_CONTENT
-    return render_template_string(BASE_TEMPLATE, content=content, extra_scripts=UPLOAD_SCRIPTS)
+    from markupsafe import Markup
+    content = Markup(DATA_INPUT_CONTENT)
+    extra_scripts = Markup(UPLOAD_SCRIPTS)
+    return render_template_string(BASE_TEMPLATE, content=content, extra_scripts=extra_scripts)
 
 @app.route('/settings')
 def settings():
-    content = SETTINGS_CONTENT
-    return render_template_string(BASE_TEMPLATE, content=content, extra_scripts=SETTINGS_SCRIPTS)
+    from markupsafe import Markup
+    content = Markup(SETTINGS_CONTENT)
+    extra_scripts = Markup(SETTINGS_SCRIPTS)
+    return render_template_string(BASE_TEMPLATE, content=content, extra_scripts=extra_scripts)
 
 @app.route('/results')
 def results():
-    content = RESULTS_CONTENT
-    return render_template_string(BASE_TEMPLATE, content=content, extra_scripts=RESULTS_SCRIPTS)
+    from markupsafe import Markup
+    content = Markup(RESULTS_CONTENT)
+    extra_scripts = Markup(RESULTS_SCRIPTS)
+    return render_template_string(BASE_TEMPLATE, content=content, extra_scripts=extra_scripts)
 
 @app.route('/map')
 def map_view():
-    content = MAP_CONTENT
-    return render_template_string(BASE_TEMPLATE, content=content, extra_scripts=MAP_SCRIPTS)
+    from markupsafe import Markup
+    content = Markup(MAP_CONTENT)
+    extra_scripts = Markup(MAP_SCRIPTS)
+    return render_template_string(BASE_TEMPLATE, content=content, extra_scripts=extra_scripts)
 
 @app.route('/about')
 def about():
-    content = ABOUT_CONTENT
-    return render_template_string(BASE_TEMPLATE, content=content, extra_scripts=COMMON_SCRIPTS)
+    from markupsafe import Markup
+    content = Markup(ABOUT_CONTENT)
+    extra_scripts = Markup(COMMON_SCRIPTS)
+    return render_template_string(BASE_TEMPLATE, content=content, extra_scripts=extra_scripts)
 
 @app.route('/download_template/<template_type>')
 def download_template(template_type):
@@ -661,31 +716,55 @@ def upload_data():
             if file_type in request.files:
                 file = request.files[file_type]
                 if file.filename != '':
-                    df = pd.read_csv(file)
-                    
-                    if file_type == 'district_file':
-                        # Handle your specific CSV format
-                        if 'District' in df.columns:
-                            df = df.rename(columns={
+                    try:
+                        df = pd.read_csv(file)
+                        
+                        if file_type == 'district_file':
+                            # Handle different column naming conventions
+                            column_mapping = {
                                 'District': 'district',
                                 'CDST Lab linked to currently': 'current_cdst',
                                 'Latitude of District HQ': 'lat',
                                 'Longitude of District HQ': 'lon',
                                 'Presumptive tests in one quarter': 'tests_per_quarter'
-                            })
-                        session['district_data'] = df.to_json()
-                        
-                    elif file_type == 'cdst_file':
-                        # Handle your specific CSV format
-                        if 'Name of CDST Lab linked' in df.columns:
-                            df = df.rename(columns={
+                            }
+                            
+                            # Apply mapping if columns exist
+                            for old_col, new_col in column_mapping.items():
+                                if old_col in df.columns:
+                                    df = df.rename(columns={old_col: new_col})
+                            
+                            # Validate required columns
+                            required_cols = ['district', 'current_cdst', 'lat', 'lon', 'tests_per_quarter']
+                            if not all(col in df.columns for col in required_cols):
+                                return jsonify({'status': 'error', 'message': f'District file missing columns: {[col for col in required_cols if col not in df.columns]}'})
+                            
+                            session['district_data'] = df.to_json()
+                            
+                        elif file_type == 'cdst_file':
+                            # Handle different column naming conventions
+                            column_mapping = {
                                 'Name of CDST Lab linked': 'lab_name',
                                 'Address': 'address',
                                 'Latitude': 'lat',
                                 'Longitude': 'lon',
                                 'Capacity of lab': 'capacity'
-                            })
-                        session['cdst_data'] = df.to_json()
+                            }
+                            
+                            # Apply mapping if columns exist
+                            for old_col, new_col in column_mapping.items():
+                                if old_col in df.columns:
+                                    df = df.rename(columns={old_col: new_col})
+                            
+                            # Validate required columns
+                            required_cols = ['lab_name', 'address', 'lat', 'lon', 'capacity']
+                            if not all(col in df.columns for col in required_cols):
+                                return jsonify({'status': 'error', 'message': f'CDST file missing columns: {[col for col in required_cols if col not in df.columns]}'})
+                            
+                            session['cdst_data'] = df.to_json()
+                    
+                    except Exception as e:
+                        return jsonify({'status': 'error', 'message': f'Error processing {file_type}: {str(e)}'})
         
         return jsonify({'status': 'success'})
     except Exception as e:
@@ -701,11 +780,12 @@ def validate_data():
             required_cols = ['district', 'current_cdst', 'lat', 'lon', 'tests_per_quarter']
             if all(col in df.columns for col in required_cols):
                 validation_status['districts'] = True
-                validation_status['messages'].append("✅ District lab data: Valid")
+                validation_status['messages'].append(f"✅ District lab data: Valid ({len(df)} districts)")
             else:
-                validation_status['messages'].append("❌ District lab data: Missing columns")
-        except:
-            validation_status['messages'].append("❌ District lab data: Invalid")
+                missing = [col for col in required_cols if col not in df.columns]
+                validation_status['messages'].append(f"❌ District lab data: Missing columns {missing}")
+        except Exception as e:
+            validation_status['messages'].append(f"❌ District lab data: Invalid - {str(e)}")
     else:
         validation_status['messages'].append("⏳ District lab data: Not uploaded")
     
@@ -715,11 +795,12 @@ def validate_data():
             required_cols = ['lab_name', 'address', 'lat', 'lon', 'capacity']
             if all(col in df.columns for col in required_cols):
                 validation_status['cdst'] = True
-                validation_status['messages'].append("✅ CDST lab data: Valid")
+                validation_status['messages'].append(f"✅ CDST lab data: Valid ({len(df)} labs)")
             else:
-                validation_status['messages'].append("❌ CDST lab data: Missing columns")
-        except:
-            validation_status['messages'].append("❌ CDST lab data: Invalid")
+                missing = [col for col in required_cols if col not in df.columns]
+                validation_status['messages'].append(f"❌ CDST lab data: Missing columns {missing}")
+        except Exception as e:
+            validation_status['messages'].append(f"❌ CDST lab data: Invalid - {str(e)}")
     else:
         validation_status['messages'].append("⏳ CDST lab data: Not uploaded")
     
@@ -738,36 +819,49 @@ def run_optimization():
         cdst_df = pd.read_json(session['cdst_data'])
         
         logger.log("=== OPTIMIZATION STARTED ===")
+        logger.log(f"Districts: {len(district_df)}, CDST Labs: {len(cdst_df)}")
         
         # Calculate travel time matrix
         n_districts, n_labs = len(district_df), len(cdst_df)
         travel_times = np.zeros((n_districts, n_labs))
         
         distance_method = params.get('distance_method', 'euclidean')
+        logger.log(f"Using distance method: {distance_method}")
         
         for i in range(n_districts):
             for j in range(n_labs):
-                start_coords = (district_df.iloc[i]['lat'], district_df.iloc[i]['lon'])
-                end_coords = (cdst_df.iloc[j]['lat'], cdst_df.iloc[j]['lon'])
-                
-                if distance_method == 'ors_api':
-                    travel_time = DistanceCalculator.openroute_service_time(start_coords, end_coords, params.get('ors_api_key', ''))
-                else:
-                    travel_time = DistanceCalculator.euclidean_distance_time(start_coords, end_coords)
-                
-                travel_times[i, j] = travel_time
+                try:
+                    start_coords = (float(district_df.iloc[i]['lat']), float(district_df.iloc[i]['lon']))
+                    end_coords = (float(cdst_df.iloc[j]['lat']), float(cdst_df.iloc[j]['lon']))
+                    
+                    if distance_method == 'ors_api':
+                        travel_time = DistanceCalculator.openroute_service_time(
+                            start_coords, end_coords, params.get('ors_api_key', ''))
+                    else:
+                        travel_time = DistanceCalculator.euclidean_distance_time(start_coords, end_coords)
+                    
+                    travel_times[i, j] = travel_time
+                except Exception as e:
+                    logger.log(f"Error calculating distance for district {i}, lab {j}: {e}", "ERROR")
+                    travel_times[i, j] = 999  # Large penalty for failed calculations
+        
+        logger.log("Travel time matrix calculated")
         
         # Run optimization
-        capacities = cdst_df['capacity'].values
-        demands = district_df['tests_per_quarter'].values
+        capacities = cdst_df['capacity'].values.astype(float)
+        demands = district_df['tests_per_quarter'].values.astype(float)
         
-        if params.get('optimization_method') == 'linear_programming':
-            result = NetworkOptimizer.linear_programming_optimization(travel_times, capacities, demands, params.get('capacity_flexibility', 5) / 100)
+        optimization_method = params.get('optimization_method', 'linear_programming')
+        logger.log(f"Using optimization method: {optimization_method}")
+        
+        if optimization_method == 'linear_programming':
+            result = NetworkOptimizer.linear_programming_optimization(
+                travel_times, capacities, demands, params.get('capacity_flexibility', 5) / 100)
         else:
             result = NetworkOptimizer.greedy_optimization(travel_times, capacities, demands)
         
         if result is None:
-            return jsonify({'status': 'error', 'message': 'Optimization failed'})
+            return jsonify({'status': 'error', 'message': 'Optimization failed - check constraints', 'logs': logger.get_logs()})
         
         # Process results
         assignment_matrix = result['assignment']
@@ -779,53 +873,67 @@ def run_optimization():
             optimized_travel_time = travel_times[i, assigned_lab_idx]
             
             current_cdst = district_df.iloc[i]['current_cdst']
-            current_lab_idx = cdst_df[cdst_df['lab_name'] == current_cdst].index
-            current_travel_time = travel_times[i, current_lab_idx[0]] if len(current_lab_idx) > 0 else 0
+            current_lab_matches = cdst_df[cdst_df['lab_name'] == current_cdst]
+            
+            if len(current_lab_matches) > 0:
+                current_lab_idx = current_lab_matches.index[0]
+                current_travel_time = travel_times[i, current_lab_idx]
+            else:
+                logger.log(f"Warning: Current assignment '{current_cdst}' not found in CDST data", "WARNING")
+                current_travel_time = optimized_travel_time  # Default to optimized if current not found
             
             results_data.append({
                 'district': district_df.iloc[i]['district'],
                 'current_assignment': current_cdst,
                 'optimized_assignment': optimized_assignment,
-                'current_travel_time': current_travel_time,
-                'optimized_travel_time': optimized_travel_time,
-                'improvement_minutes': current_travel_time - optimized_travel_time,
-                'tests_per_quarter': district_df.iloc[i]['tests_per_quarter'],
-                'district_lat': district_df.iloc[i]['lat'],
-                'district_lon': district_df.iloc[i]['lon']
+                'current_travel_time': float(current_travel_time),
+                'optimized_travel_time': float(optimized_travel_time),
+                'improvement_minutes': float(current_travel_time - optimized_travel_time),
+                'tests_per_quarter': int(district_df.iloc[i]['tests_per_quarter']),
+                'district_lat': float(district_df.iloc[i]['lat']),
+                'district_lon': float(district_df.iloc[i]['lon'])
             })
         
         results_df = pd.DataFrame(results_data)
         
-        # Lab utilization
+        # Lab utilization analysis
         utilization_data = []
         for j in range(n_labs):
             lab_name = cdst_df.iloc[j]['lab_name']
-            capacity = cdst_df.iloc[j]['capacity']
-            optimized_load = result['lab_loads'][j]
-            current_load = district_df[district_df['current_cdst'] == lab_name]['tests_per_quarter'].sum()
+            capacity = float(cdst_df.iloc[j]['capacity'])
+            optimized_load = float(result['lab_loads'][j])
+            
+            # Calculate current load
+            current_assignments = district_df[district_df['current_cdst'] == lab_name]
+            current_load = float(current_assignments['tests_per_quarter'].sum() if len(current_assignments) > 0 else 0)
             
             utilization_data.append({
                 'lab_name': lab_name,
                 'capacity': capacity,
                 'current_load': current_load,
                 'optimized_load': optimized_load,
-                'current_utilization': (current_load / capacity) * 100,
-                'optimized_utilization': (optimized_load / capacity) * 100
+                'current_utilization': (current_load / capacity) * 100 if capacity > 0 else 0,
+                'optimized_utilization': (optimized_load / capacity) * 100 if capacity > 0 else 0
             })
         
         utilization_df = pd.DataFrame(utilization_data)
         
-        # Store results
+        # Store results in session
         session['optimization_results'] = results_df.to_json()
         session['lab_utilization'] = utilization_df.to_json()
-        session['optimization_method'] = params.get('optimization_method', 'linear_programming')
+        session['optimization_method'] = optimization_method
         session['distance_method'] = distance_method
         
+        total_improvement = results_df['improvement_minutes'].sum()
+        reassigned_count = len(results_df[results_df['current_assignment'] != results_df['optimized_assignment']])
+        
+        logger.log(f"Total time saved: {total_improvement:.2f} minutes")
+        logger.log(f"Districts reassigned: {reassigned_count}/{len(results_df)}")
         logger.log("=== OPTIMIZATION COMPLETED ===")
         
         return jsonify({
             'status': 'success',
-            'message': 'Optimization completed successfully!',
+            'message': f'Optimization completed! Time saved: {total_improvement:.1f} min, {reassigned_count} reassignments',
             'logs': logger.get_logs()
         })
         
@@ -838,90 +946,142 @@ def get_optimization_data():
     if 'optimization_results' not in session:
         return jsonify({'status': 'error', 'message': 'No results available'})
     
-    results_df = pd.read_json(session['optimization_results'])
-    utilization_df = pd.read_json(session['lab_utilization'])
-    
-    return jsonify({
-        'status': 'success',
-        'results': results_df.to_dict('records'),
-        'utilization': utilization_df.to_dict('records'),
-        'method': session.get('optimization_method', 'Unknown'),
-        'distance_method': session.get('distance_method', 'Unknown')
-    })
+    try:
+        results_df = pd.read_json(session['optimization_results'])
+        utilization_df = pd.read_json(session['lab_utilization'])
+        
+        return jsonify({
+            'status': 'success',
+            'results': results_df.to_dict('records'),
+            'utilization': utilization_df.to_dict('records'),
+            'method': session.get('optimization_method', 'Unknown'),
+            'distance_method': session.get('distance_method', 'Unknown')
+        })
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': f'Error loading results: {str(e)}'})
 
 @app.route('/generate_plots')
 def generate_plots():
     if 'optimization_results' not in session:
         return jsonify({'status': 'error', 'message': 'No data available'})
     
-    results_df = pd.read_json(session['optimization_results'])
-    utilization_df = pd.read_json(session['lab_utilization'])
-    
-    # Utilization plot
-    utilization_plot = go.Figure()
-    utilization_plot.add_trace(go.Bar(name='Current', x=utilization_df['lab_name'], y=utilization_df['current_utilization'], marker_color='lightcoral'))
-    utilization_plot.add_trace(go.Bar(name='Optimized', x=utilization_df['lab_name'], y=utilization_df['optimized_utilization'], marker_color='lightblue'))
-    utilization_plot.update_layout(title='Lab Utilization Comparison', xaxis_title='Labs', yaxis_title='Utilization (%)', barmode='group')
-    
-    # Improvement plot
-    improvements = results_df[results_df['improvement_minutes'] > 0].nlargest(20, 'improvement_minutes')
-    improvement_plot = go.Figure([go.Bar(x=improvements['improvement_minutes'], y=improvements['district'], orientation='h', marker_color='steelblue')])
-    improvement_plot.update_layout(title='Top Travel Time Improvements', xaxis_title='Minutes Saved', yaxis_title='District')
-    
-    return jsonify({
-        'utilization_plot': json.dumps(utilization_plot, cls=plotly.utils.PlotlyJSONEncoder),
-        'improvement_plot': json.dumps(improvement_plot, cls=plotly.utils.PlotlyJSONEncoder)
-    })
+    try:
+        results_df = pd.read_json(session['optimization_results'])
+        utilization_df = pd.read_json(session['lab_utilization'])
+        
+        # Utilization plot
+        utilization_plot = go.Figure()
+        utilization_plot.add_trace(go.Bar(
+            name='Current', 
+            x=utilization_df['lab_name'], 
+            y=utilization_df['current_utilization'], 
+            marker_color='lightcoral'
+        ))
+        utilization_plot.add_trace(go.Bar(
+            name='Optimized', 
+            x=utilization_df['lab_name'], 
+            y=utilization_df['optimized_utilization'], 
+            marker_color='lightblue'
+        ))
+        utilization_plot.update_layout(
+            title='Lab Utilization Comparison (%)', 
+            xaxis_title='Labs', 
+            yaxis_title='Utilization (%)', 
+            barmode='group'
+        )
+        
+        # Improvement plot
+        improvements = results_df[results_df['improvement_minutes'] > 0].nlargest(20, 'improvement_minutes')
+        improvement_plot = go.Figure([go.Bar(
+            x=improvements['improvement_minutes'], 
+            y=improvements['district'], 
+            orientation='h', 
+            marker_color='steelblue'
+        )])
+        improvement_plot.update_layout(
+            title='Top Travel Time Improvements', 
+            xaxis_title='Minutes Saved', 
+            yaxis_title='District',
+            height=max(400, len(improvements) * 20)
+        )
+        
+        return jsonify({
+            'utilization_plot': json.dumps(utilization_plot, cls=plotly.utils.PlotlyJSONEncoder),
+            'improvement_plot': json.dumps(improvement_plot, cls=plotly.utils.PlotlyJSONEncoder)
+        })
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': f'Error generating plots: {str(e)}'})
 
 @app.route('/generate_map')
 def generate_map():
-    if 'optimization_results' not in session:
+    if 'optimization_results' not in session or 'cdst_data' not in session:
         return jsonify({'status': 'error', 'message': 'No data available'})
     
-    results_df = pd.read_json(session['optimization_results'])
-    cdst_df = pd.read_json(session['cdst_data'])
-    
-    # Create map
-    center_lat = results_df['district_lat'].mean()
-    center_lon = results_df['district_lon'].mean()
-    m = folium.Map(location=[center_lat, center_lon], zoom_start=7)
-    
-    # Add CDST labs
-    for idx, lab in cdst_df.iterrows():
-        folium.Marker(
-            location=[lab['lat'], lab['lon']],
-            popup=f"<b>{lab['lab_name']}</b><br>{lab['address']}<br>Capacity: {lab['capacity']}",
-            icon=folium.Icon(color='red', icon='info-sign')
-        ).add_to(m)
-    
-    # Add districts
-    for idx, district in results_df.iterrows():
-        folium.CircleMarker(
-            location=[district['district_lat'], district['district_lon']],
-            radius=6,
-            popup=f"<b>{district['district']}</b><br>Tests: {district['tests_per_quarter']}<br>Time saved: {district['improvement_minutes']:.1f} min",
-            color='blue',
-            fillColor='lightblue',
-            fillOpacity=0.7
-        ).add_to(m)
-    
-    # Add lines for reassigned districts
-    reassigned = results_df[results_df['current_assignment'] != results_df['optimized_assignment']]
-    for idx, district in reassigned.iterrows():
-        lab_coords = cdst_df[cdst_df['lab_name'] == district['optimized_assignment']]
-        if not lab_coords.empty:
-            lab_coord = lab_coords.iloc[0]
-            folium.PolyLine(
-                locations=[[district['district_lat'], district['district_lon']], [lab_coord['lat'], lab_coord['lon']]],
-                color='green',
-                weight=3,
-                opacity=0.8
+    try:
+        results_df = pd.read_json(session['optimization_results'])
+        cdst_df = pd.read_json(session['cdst_data'])
+        
+        # Create map centered on data
+        center_lat = results_df['district_lat'].mean()
+        center_lon = results_df['district_lon'].mean()
+        m = folium.Map(location=[center_lat, center_lon], zoom_start=7)
+        
+        # Add CDST labs (red markers)
+        for idx, lab in cdst_df.iterrows():
+            folium.Marker(
+                location=[lab['lat'], lab['lon']],
+                popup=f"<b>{lab['lab_name']}</b><br>{lab['address']}<br>Capacity: {int(lab['capacity'])}",
+                icon=folium.Icon(color='red', icon='info-sign')
             ).add_to(m)
-    
-    return m._repr_html_()
+        
+        # Add districts (blue circles)
+        for idx, district in results_df.iterrows():
+            color = 'green' if district['current_assignment'] != district['optimized_assignment'] else 'blue'
+            folium.CircleMarker(
+                location=[district['district_lat'], district['district_lon']],
+                radius=8,
+                popup=f"""<b>{district['district']}</b><br>
+                         Tests: {district['tests_per_quarter']}<br>
+                         Current: {district['current_assignment']}<br>
+                         Optimized: {district['optimized_assignment']}<br>
+                         Time saved: {district['improvement_minutes']:.1f} min""",
+                color=color,
+                fillColor=color,
+                fillOpacity=0.7
+            ).add_to(m)
+        
+        # Add lines for reassigned districts (green lines)
+        reassigned = results_df[results_df['current_assignment'] != results_df['optimized_assignment']]
+        for idx, district in reassigned.iterrows():
+            lab_coords = cdst_df[cdst_df['lab_name'] == district['optimized_assignment']]
+            if not lab_coords.empty:
+                lab_coord = lab_coords.iloc[0]
+                folium.PolyLine(
+                    locations=[
+                        [district['district_lat'], district['district_lon']], 
+                        [lab_coord['lat'], lab_coord['lon']]
+                    ],
+                    color='green',
+                    weight=3,
+                    opacity=0.8,
+                    popup=f"{district['district']} → {district['optimized_assignment']}"
+                ).add_to(m)
+        
+        return m._repr_html_()
+    except Exception as e:
+        return f'<div class="alert alert-danger">Error generating map: {str(e)}</div>'
+
+# Error handlers
+@app.errorhandler(404)
+def not_found(error):
+    return redirect(url_for('index'))
+
+@app.errorhandler(500)
+def internal_error(error):
+    return jsonify({'status': 'error', 'message': 'Internal server error'}), 500
 
 # For Posit Connect deployment
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, host='0.0.0.0', port=5000)
 else:
     application = app  # Posit Connect looks for 'application'
