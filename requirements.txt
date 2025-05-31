@@ -1,0 +1,114 @@
+# requirements.txt for single-file Flask app on Posit Connect
+
+Flask==2.3.3
+pandas==2.0.3
+numpy==1.24.3
+plotly==5.17.0
+folium==0.14.0
+requests==2.31.0
+scipy==1.11.3
+pulp==2.7.0
+geopy==2.3.0
+Werkzeug==2.3.7
+rsconnect-python
+
+# Optional - only if you want full GIS capabilities
+geopandas==0.13.2
+shapely==2.0.1
+
+# ============================================
+# POSIT CONNECT DEPLOYMENT INSTRUCTIONS
+# ============================================
+
+# 1. PREPARE YOUR FILES
+#    You need only TWO files:
+#    - app.py (the single-file Flask application above)
+#    - requirements.txt (this file)
+
+# 2. INSTALL DEPLOYMENT TOOLS
+#    pip install rsconnect-python
+
+# 3. CONFIGURE POSIT CONNECT
+#    rsconnect add --server https://your-posit-connect-server.com --name myserver --api-key your-api-key
+#    (Get your API key from your Posit Connect dashboard)
+
+# 4. DEPLOY THE APPLICATION
+#    From the directory containing app.py and requirements.txt, run:
+#    rsconnect deploy flask app.py --server myserver --title "Diagnostic Network Optimizer"
+
+# 5. ALTERNATIVE: Deploy via Posit Connect UI
+#    - Upload both files via the Posit Connect web interface
+#    - Select "Flask Application" as the content type
+#    - Posit Connect will automatically detect and install requirements
+
+# ============================================
+# FILE STRUCTURE FOR DEPLOYMENT
+# ============================================
+# your-project/
+# ├── app.py              # Single-file Flask application
+# └── requirements.txt    # Python dependencies
+
+# ============================================
+# TESTING LOCALLY BEFORE DEPLOYMENT
+# ============================================
+# 1. Create virtual environment:
+#    python -m venv venv
+#    source venv/bin/activate  # On Windows: venv\Scripts\activate
+
+# 2. Install dependencies:
+#    pip install -r requirements.txt
+
+# 3. Run locally:
+#    python app.py
+#    # Visit http://localhost:5000
+
+# 4. Test with your CSV files:
+#    - Upload your "District lab details.csv" and "CDST lab details.csv"
+#    - The app automatically handles your column names
+#    - Run optimization and verify results
+
+# ============================================
+# IMPORTANT NOTES FOR POSIT CONNECT
+# ============================================
+
+# 1. API Keys: If using OpenRouteService, make sure to:
+#    - Either hardcode the API key (for demo/testing)
+#    - Or use environment variables in production
+
+# 2. File Uploads: The app uses temporary directories for file uploads
+#    This works well on Posit Connect's managed environment
+
+# 3. Session Storage: Uses Flask sessions (in-memory)
+#    For production, consider using Redis or database storage
+
+# 4. Memory Usage: Large datasets may need memory optimization
+#    Consider processing data in chunks for very large files
+
+# 5. Timeouts: Optimization may take time for large problems
+#    Posit Connect has reasonable timeout limits for web apps
+
+# ============================================
+# CUSTOMIZATION FOR YOUR ORGANIZATION
+# ============================================
+
+# Update these in app.py:
+# - Change app.secret_key to a secure random string
+# - Modify the default OpenRouteService API key
+# - Adjust default optimization parameters
+# - Customize the styling/branding in the HTML templates
+
+# ============================================
+# TROUBLESHOOTING
+# ============================================
+
+# If deployment fails:
+# 1. Check that both files are in the same directory
+# 2. Ensure requirements.txt has no extra whitespace
+# 3. Verify your Posit Connect server URL and API key
+# 4. Check Posit Connect logs for specific error messages
+
+# If the app runs but has issues:
+# 1. Check file upload limits on Posit Connect
+# 2. Verify CSV file formats match expected columns
+# 3. Monitor memory usage for large datasets
+# 4. Check network connectivity for OpenRouteService API calls
