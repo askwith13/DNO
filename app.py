@@ -1,4 +1,8 @@
 from flask import Flask, render_template_string, request, jsonify, send_file, redirect, url_for, session
+<<<<<<< HEAD
+from markupsafe import Markup
+=======
+>>>>>>> d82959d (Initial commit)
 import pandas as pd
 import numpy as np
 import json
@@ -19,6 +23,9 @@ import plotly.utils
 import folium
 from folium import plugins
 
+<<<<<<< HEAD
+# Distance and optimization libraries
+=======
 # Spatial and optimization libraries
 try:
     import geopandas as gpd
@@ -28,17 +35,27 @@ except ImportError:
     Point = None
     Polygon = None
 
+>>>>>>> d82959d (Initial commit)
 from geopy.distance import geodesic
 import pulp  # For linear programming
 from scipy.spatial.distance import cdist
 
 app = Flask(__name__)
+<<<<<<< HEAD
+app.secret_key = 'your-secret-key-change-this-for-production'
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
+
+# Create uploads directory if it doesn't exist
+UPLOAD_FOLDER = tempfile.mkdtemp()
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+=======
 app.secret_key = os.environ.get('SECRET_KEY', 'fallback-secret-key-change-in-production')
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
 app.config['PERMANENT_SESSION_LIFETIME'] = 3600  # 1 hour session timeout
 
 # Configuration - OpenRouteService API Key
 ORS_API_KEY = "5b3ce3597851110001cf62481a51a0c1d253455eb67aa25df367bd8d"
+>>>>>>> d82959d (Initial commit)
 
 # HTML TEMPLATES AS STRINGS
 BASE_TEMPLATE = '''
@@ -60,10 +77,13 @@ BASE_TEMPLATE = '''
         .content-area { padding: 20px; }
         .progress-text { font-family: monospace; font-size: 12px; background-color: #f8f9fa; padding: 10px; border: 1px solid #dee2e6; border-radius: 4px; white-space: pre-wrap; max-height: 200px; overflow-y: auto; }
         .card-header { background-color: #007bff; color: white; }
+<<<<<<< HEAD
+=======
         .api-status { padding: 5px 10px; border-radius: 4px; font-size: 12px; }
         .api-status.success { background-color: #d4edda; color: #155724; }
         .api-status.error { background-color: #f8d7da; color: #721c24; }
         .api-status.warning { background-color: #fff3cd; color: #856404; }
+>>>>>>> d82959d (Initial commit)
     </style>
 </head>
 <body>
@@ -78,13 +98,20 @@ BASE_TEMPLATE = '''
                         <li class="nav-item"><a class="nav-link" href="/settings"><i class="fas fa-cogs"></i> Settings</a></li>
                         <li class="nav-item"><a class="nav-link" href="/results"><i class="fas fa-chart-bar"></i> Results</a></li>
                         <li class="nav-item"><a class="nav-link" href="/map"><i class="fas fa-map"></i> Map</a></li>
+<<<<<<< HEAD
+=======
                         <li class="nav-item"><a class="nav-link" href="/isochrone"><i class="fas fa-clock"></i> Isochrones</a></li>
+>>>>>>> d82959d (Initial commit)
                         <li class="nav-item"><a class="nav-link" href="/about"><i class="fas fa-info-circle"></i> About</a></li>
                     </ul>
                 </div>
             </nav>
             <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 content-area">
+<<<<<<< HEAD
+                {{ content }}
+=======
                 {{ content|safe }}
+>>>>>>> d82959d (Initial commit)
             </main>
         </div>
     </div>
@@ -92,7 +119,11 @@ BASE_TEMPLATE = '''
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script type="text/javascript" src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
     <script type="text/javascript" src="https://cdn.datatables.net/1.11.5/js/dataTables.bootstrap5.min.js"></script>
+<<<<<<< HEAD
+    {{ extra_scripts }}
+=======
     {{ extra_scripts|safe }}
+>>>>>>> d82959d (Initial commit)
 </body>
 </html>
 '''
@@ -104,6 +135,9 @@ INDEX_CONTENT = '''
             <h1 class="display-4"><i class="fas fa-network-wired"></i> Diagnostic Network Optimization Tool</h1>
             <p class="lead">Optimize the assignment of district laboratories to CDST facilities to minimize travel time while respecting capacity constraints.</p>
             <hr class="my-4" style="border-color: rgba(255,255,255,0.3);">
+<<<<<<< HEAD
+            <a class="btn btn-light btn-lg" href="/data_input" role="button"><i class="fas fa-rocket"></i> Get Started</a>
+=======
             <a class="btn btn-light btn-lg me-2" href="/data_input" role="button"><i class="fas fa-rocket"></i> Get Started</a>
             <a class="btn btn-outline-light" href="/fresh_start" role="button"><i class="fas fa-refresh"></i> Fresh Start</a>
         </div>
@@ -113,6 +147,7 @@ INDEX_CONTENT = '''
     <div class="col-12">
         <div class="alert alert-info">
             <strong>Having issues with cached data?</strong> If you see old data that won't clear, click "Fresh Start" above or use the debugging tools in the Data Input section.
+>>>>>>> d82959d (Initial commit)
         </div>
     </div>
 </div>
@@ -152,6 +187,10 @@ DATA_INPUT_CONTENT = '''
 <div class="row">
     <div class="col-12">
         <div class="card">
+<<<<<<< HEAD
+            <div class="card-header"><h5>Data Templates and Upload</h5></div>
+            <div class="card-body">
+=======
             <div class="card-header">
                 <h5>Data Templates and Upload</h5>
                 <div class="btn-group" role="group">
@@ -171,6 +210,7 @@ DATA_INPUT_CONTENT = '''
                     <strong>Troubleshooting:</strong> If you see old data that won't clear, try the "Hard Reset" button above.
                 </div>
                 
+>>>>>>> d82959d (Initial commit)
                 <p><strong>Step 1:</strong> Download template files</p>
                 <div class="mb-3">
                     <a href="/download_template/district" class="btn btn-info me-2"><i class="fas fa-download"></i> District Template</a>
@@ -192,7 +232,11 @@ DATA_INPUT_CONTENT = '''
                 <div id="uploadStatus" class="mt-3"></div>
                 <hr>
                 <h5>Data Validation Status:</h5>
+<<<<<<< HEAD
+                <div id="validationStatus" class="progress-text">Waiting for data upload...</div>
+=======
                 <div id="validationStatus" class="progress-text">Loading validation status...</div>
+>>>>>>> d82959d (Initial commit)
             </div>
         </div>
     </div>
@@ -212,6 +256,12 @@ SETTINGS_CONTENT = '''
                 </div>
                 <div class="form-check">
                     <input class="form-check-input" type="radio" name="distance_method" id="ors_api" value="ors_api">
+<<<<<<< HEAD
+                    <label class="form-check-label" for="ors_api"><strong>OpenRouteService API</strong> (Most accurate)</label>
+                </div>
+                <div id="ors_settings" style="display:none;" class="mt-3">
+                    <input type="text" class="form-control" id="ors_api_key" placeholder="API Key" value="5b3ce3597851110001cf62481a51a0c1d253455eb67aa25df367bd8d">
+=======
                     <label class="form-check-label" for="ors_api"><strong>OpenRouteService API</strong> (Most accurate, API key included)</label>
                 </div>
                 <div class="form-check">
@@ -222,6 +272,7 @@ SETTINGS_CONTENT = '''
                     <div class="alert alert-info">
                         <i class="fas fa-info-circle"></i> <strong>OpenRouteService API:</strong> Pre-configured with API key for your convenience. No setup required!
                     </div>
+>>>>>>> d82959d (Initial commit)
                 </div>
             </div>
         </div>
@@ -241,7 +292,10 @@ SETTINGS_CONTENT = '''
                 <div class="mt-3">
                     <label class="form-label">Capacity Flexibility (%):</label>
                     <input type="number" class="form-control" id="capacity_flexibility" value="5" min="0" max="50">
+<<<<<<< HEAD
+=======
                     <small class="form-text text-muted">Allow labs to exceed capacity by this percentage</small>
+>>>>>>> d82959d (Initial commit)
                 </div>
             </div>
         </div>
@@ -253,6 +307,13 @@ SETTINGS_CONTENT = '''
             <div class="card-header"><h5>Run Optimization</h5></div>
             <div class="card-body">
                 <button id="runOptimization" class="btn btn-primary btn-lg"><i class="fas fa-play"></i> Run Optimization</button>
+<<<<<<< HEAD
+                <div class="mt-3">
+                    <div class="progress" style="display:none;">
+                        <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated" style="width: 0%"></div>
+                    </div>
+                </div>
+=======
                 
                 <!-- Progress Bar Section -->
                 <div class="mt-3">
@@ -271,6 +332,7 @@ SETTINGS_CONTENT = '''
                     </div>
                 </div>
                 
+>>>>>>> d82959d (Initial commit)
                 <h5 class="mt-3">Optimization Logs:</h5>
                 <div id="optimizationLogs" class="progress-text" style="min-height: 150px;">Ready to run optimization.</div>
             </div>
@@ -284,6 +346,9 @@ RESULTS_CONTENT = '''
 <div class="row">
     <div class="col-12">
         <div class="card">
+<<<<<<< HEAD
+            <div class="card-header"><h5>Summary Statistics</h5></div>
+=======
             <div class="card-header">
                 <h5>Summary Statistics</h5>
                 <div class="btn-group" role="group">
@@ -295,6 +360,7 @@ RESULTS_CONTENT = '''
                     </a>
                 </div>
             </div>
+>>>>>>> d82959d (Initial commit)
             <div class="card-body">
                 <div id="summaryTable">No optimization results available. Please run optimization first.</div>
             </div>
@@ -316,6 +382,11 @@ RESULTS_CONTENT = '''
     </div>
 </div>
 <div class="row mt-4">
+<<<<<<< HEAD
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header"><h5>Detailed Assignments</h5></div>
+=======
     <div class="col-md-6">
         <div class="card">
             <div class="card-header"><h5>Current Travel Times Distribution</h5></div>
@@ -338,6 +409,7 @@ RESULTS_CONTENT = '''
                     <i class="fas fa-download"></i> Export Results
                 </button>
             </div>
+>>>>>>> d82959d (Initial commit)
             <div class="card-body">
                 <table id="resultsTable" class="table table-striped">
                     <thead>
@@ -358,7 +430,12 @@ MAP_CONTENT = '''
         <div class="card">
             <div class="card-header">
                 <h5>Interactive Network Map</h5>
-                <p class="mb-0">🔴 Red markers: CDST Labs | 🔵 Blue circles: District HQs | 🟢 Green lines: New assignments</p>
+                <div class="d-flex justify-content-between align-items-center">
+                    <p class="mb-0">🔴 Red markers: CDST Labs | 🔵 Blue circles: District HQs | 🟢 Green lines: New assignments</p>
+                    <button class="btn btn-sm btn-outline-light" id="downloadMapBtn">
+                        <i class="fas fa-download"></i> Download Map as HTML
+                    </button>
+                </div>
             </div>
             <div class="card-body">
                 <div id="networkMap" style="height: 700px;">Loading map...</div>
@@ -368,6 +445,8 @@ MAP_CONTENT = '''
 </div>
 '''
 
+<<<<<<< HEAD
+=======
 ISOCHRONE_CONTENT = '''
 <h2><i class="fas fa-clock"></i> Isochrone Analysis</h2>
 <div class="row">
@@ -409,8 +488,15 @@ ISOCHRONE_CONTENT = '''
     <div class="col-md-8">
         <div class="card">
             <div class="card-header">
-                <h5>Isochrone Map</h5>
-                <p class="mb-0">Reachable areas within the specified travel time</p>
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5>Isochrone Map</h5>
+                        <p class="mb-0">Reachable areas within the specified travel time</p>
+                    </div>
+                    <button class="btn btn-sm btn-outline-light" id="downloadIsochroneBtn" style="display:none;">
+                        <i class="fas fa-download"></i> Download Map as HTML
+                    </button>
+                </div>
             </div>
             <div class="card-body">
                 <div id="isochroneMap" style="height: 600px;">
@@ -439,12 +525,27 @@ ISOCHRONE_CONTENT = '''
 </div>
 '''
 
+>>>>>>> d82959d (Initial commit)
 ABOUT_CONTENT = '''
 <h2><i class="fas fa-info-circle"></i> About This Tool</h2>
 <div class="row">
     <div class="col-12">
         <div class="card">
             <div class="card-body">
+<<<<<<< HEAD
+                <h3>Diagnostic Network Optimization Tool</h3>
+                <p>This tool helps optimize the assignment of district laboratories to CDST facilities to minimize travel time while respecting capacity constraints.</p>
+                <h4>Key Features:</h4>
+                <ul>
+                    <li>📊 Multiple distance calculation methods</li>
+                    <li>🧮 Linear Programming & Greedy optimization algorithms</li>
+                    <li>🗺️ Interactive mapping and visualization</li>
+                    <li>📈 Comprehensive results analysis</li>
+                </ul>
+                <hr>
+                <p><strong>Version:</strong> 2.1 Flask Debugged Edition | <strong>Platform:</strong> Posit Connect Ready</p>
+                <p><strong>Dependencies:</strong> Removed geopandas/shapely (not used in code)</p>
+=======
                 <div class="row">
                     <div class="col-md-8">
                         <h3>Diagnostic Network Optimization Tool</h3>
@@ -506,6 +607,34 @@ ABOUT_CONTENT = '''
                             </div>
                         </div>
                         
+                        <h4>Analysis Capabilities</h4>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="card bg-light">
+                                    <div class="card-body">
+                                        <h6><i class="fas fa-route"></i> Distance Calculation</h6>
+                                        <p class="small">Multiple methods for calculating travel times including straight-line distance and real road routing using external APIs.</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card bg-light">
+                                    <div class="card-body">
+                                        <h6><i class="fas fa-clock"></i> Isochrone Analysis</h6>
+                                        <p class="small">Visualize catchment areas and determine which districts can reach each lab within specified time limits.</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card bg-light">
+                                    <div class="card-body">
+                                        <h6><i class="fas fa-balance-scale"></i> Capacity Planning</h6>
+                                        <p class="small">Optimize lab assignments while respecting capacity constraints and flexibility parameters.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
                         <h4>Technical Specifications</h4>
                         <ul>
                             <li><strong>Platform:</strong> Flask Web Application with Python backend</li>
@@ -514,6 +643,15 @@ ABOUT_CONTENT = '''
                             <li><strong>Visualization:</strong> Plotly interactive charts</li>
                             <li><strong>Geospatial Analysis:</strong> GeoPy and spatial distance calculations</li>
                             <li><strong>Data Processing:</strong> Pandas and NumPy for efficient data handling</li>
+                        </ul>
+                        
+                        <h4>Use Cases</h4>
+                        <ul>
+                            <li><strong>Healthcare Network Planning:</strong> Optimize diagnostic laboratory networks</li>
+                            <li><strong>Emergency Response:</strong> Plan rapid diagnostic capabilities</li>
+                            <li><strong>Resource Allocation:</strong> Balance workload across facilities</li>
+                            <li><strong>Geographic Accessibility:</strong> Ensure equitable access to diagnostic services</li>
+                            <li><strong>Capacity Expansion:</strong> Identify optimal locations for new facilities</li>
                         </ul>
                     </div>
                     <div class="col-md-4">
@@ -532,6 +670,17 @@ ABOUT_CONTENT = '''
                                 <h6><i class="fas fa-eye"></i> Vision</h6>
                                 <p class="small">A world where health equity is within reach for everyone.</p>
                                 
+                                <h6><i class="fas fa-globe"></i> Global Impact</h6>
+                                <ul class="small">
+                                    <li>70+ countries served</li>
+                                    <li>1,600+ employees worldwide</li>
+                                    <li>500+ partners globally</li>
+                                    <li>Focus on innovation and scale</li>
+                                </ul>
+                                
+                                <h6><i class="fas fa-laptop-code"></i> Digital Health</h6>
+                                <p class="small">PATH develops digital tools and platforms to strengthen health systems, improve service delivery, and advance health equity through technology innovation.</p>
+                                
                                 <div class="mt-3">
                                     <a href="https://www.path.org" target="_blank" class="btn btn-light btn-sm">
                                         <i class="fas fa-external-link-alt"></i> Visit PATH.org
@@ -539,14 +688,71 @@ ABOUT_CONTENT = '''
                                 </div>
                             </div>
                         </div>
+                        
+                        <div class="card mt-3 border-success">
+                            <div class="card-header bg-success text-white">
+                                <h6><i class="fas fa-balance-scale"></i> License & Usage</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="alert alert-success">
+                                    <h6><i class="fas fa-heart"></i> Free for Non-Commercial Use</h6>
+                                    <p class="small mb-0">This tool is provided free of charge for non-commercial, research, and educational purposes.</p>
+                                </div>
+                                
+                                <h6>Permitted Uses:</h6>
+                                <ul class="small">
+                                    <li>Academic research</li>
+                                    <li>Educational purposes</li>
+                                    <li>Public health planning</li>
+                                    <li>Non-profit healthcare initiatives</li>
+                                    <li>Government health programs</li>
+                                </ul>
+                                
+                                <h6>Commercial Use:</h6>
+                                <p class="small">For commercial licensing and enterprise support, please contact PATH's Digital Health team.</p>
+                                
+                                <h6>Support:</h6>
+                                <p class="small">Community support is available through PATH's digital health resources and documentation.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <hr class="my-4">
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <h4><i class="fas fa-question-circle"></i> Getting Started</h4>
+                        <ol>
+                            <li><strong>Upload Data:</strong> Use the provided templates to upload your district and CDST lab data</li>
+                            <li><strong>Configure Settings:</strong> Choose your preferred distance calculation method and optimization algorithm</li>
+                            <li><strong>Run Optimization:</strong> Execute the analysis to get optimal lab assignments</li>
+                            <li><strong>Analyze Results:</strong> Review maps, charts, and detailed assignment recommendations</li>
+                            <li><strong>Explore Isochrones:</strong> Analyze catchment areas and accessibility for each lab</li>
+                        </ol>
+                    </div>
+                    <div class="col-md-6">
+                        <h4><i class="fas fa-life-ring"></i> Support & Resources</h4>
+                        <ul>
+                            <li><strong>Data Templates:</strong> CSV templates available in the Data Input section</li>
+                            <li><strong>API Integration:</strong> OpenRouteService API pre-configured for immediate use</li>
+                            <li><strong>Documentation:</strong> Detailed help available throughout the application</li>
+                            <li><strong>Best Practices:</strong> Refer to PATH's digital health implementation guides</li>
+                        </ul>
+                        
+                        <div class="alert alert-info">
+                            <h6><i class="fas fa-lightbulb"></i> Pro Tip</h6>
+                            <p class="small mb-0">Start with Euclidean distance for quick analysis, then use OpenRouteService (pre-configured) or OSRM for detailed road routing when you need precise travel times.</p>
+                        </div>
                     </div>
                 </div>
                 
                 <hr>
                 <footer class="text-center">
                     <p><strong>Version:</strong> 2.1 Enhanced Edition | <strong>Platform:</strong> Flask Web Application | <strong>Created by:</strong> PATH</p>
-                    <p class="text-muted small">© 2024 PATH. This tool is provided free for non-commercial use.</p>
+                    <p class="text-muted small">© 2024 PATH. This tool is provided free for non-commercial use. For commercial licensing, contact PATH's Digital Health team.</p>
                 </footer>
+>>>>>>> d82959d (Initial commit)
             </div>
         </div>
     </div>
@@ -557,11 +763,20 @@ ABOUT_CONTENT = '''
 COMMON_SCRIPTS = '''
 <script>
 $(document).ready(function() {
+<<<<<<< HEAD
+    // Common functionality
+    $('input[name="distance_method"]').change(function() {
+        if ($(this).val() === 'ors_api') {
+            $('#ors_settings').show();
+        } else {
+            $('#ors_settings').hide();
+=======
     // Highlight active navigation
     var currentPath = window.location.pathname;
     $('.sidebar a').each(function() {
         if ($(this).attr('href') === currentPath) {
             $(this).addClass('active');
+>>>>>>> d82959d (Initial commit)
         }
     });
 });
@@ -573,6 +788,8 @@ UPLOAD_SCRIPTS = '''
 $(document).ready(function() {
     loadValidationStatus();
     
+<<<<<<< HEAD
+=======
     $('#clearSession').click(function() {
         if (confirm('Are you sure you want to clear all uploaded data and results? This action cannot be undone.')) {
             $.ajax({
@@ -621,12 +838,18 @@ $(document).ready(function() {
         }
     });
     
+>>>>>>> d82959d (Initial commit)
     $('#uploadForm').on('submit', function(e) {
         e.preventDefault();
         var formData = new FormData();
         var districtFile = $('#district_file')[0].files[0];
         var cdstFile = $('#cdst_file')[0].files[0];
         
+<<<<<<< HEAD
+        if (districtFile) formData.append('district_file', districtFile);
+        if (cdstFile) formData.append('cdst_file', cdstFile);
+        
+=======
         if (!districtFile && !cdstFile) {
             $('#uploadStatus').html('<div class="alert alert-warning">Please select at least one file to upload.</div>');
             return;
@@ -637,6 +860,7 @@ $(document).ready(function() {
         
         $('#uploadStatus').html('<div class="alert alert-info">Uploading files...</div>');
         
+>>>>>>> d82959d (Initial commit)
         $.ajax({
             url: '/upload_data',
             type: 'POST',
@@ -646,20 +870,34 @@ $(document).ready(function() {
             success: function(response) {
                 if (response.status === 'success') {
                     $('#uploadStatus').html('<div class="alert alert-success">Files uploaded successfully!</div>');
+<<<<<<< HEAD
+                    loadValidationStatus();
+=======
                     setTimeout(function() {
                         loadValidationStatus();
                     }, 500);
+>>>>>>> d82959d (Initial commit)
                 } else {
                     $('#uploadStatus').html('<div class="alert alert-danger">Upload failed: ' + response.message + '</div>');
                 }
             },
             error: function() {
+<<<<<<< HEAD
+                $('#uploadStatus').html('<div class="alert alert-danger">Upload failed: Network error</div>');
+=======
                 $('#uploadStatus').html('<div class="alert alert-danger">Upload failed. Please try again.</div>');
+>>>>>>> d82959d (Initial commit)
             }
         });
     });
     
     function loadValidationStatus() {
+<<<<<<< HEAD
+        $.get('/validate_data', function(data) {
+            $('#validationStatus').text(data.messages.join('\\n'));
+        });
+    }
+=======
         $('#validationStatus').html('Loading validation status...');
         $.get('/validate_data', function(data) {
             $('#validationStatus').text(data.messages.join('\\n'));
@@ -674,6 +912,7 @@ $(document).ready(function() {
             loadValidationStatus();
         }
     }, 5000);
+>>>>>>> d82959d (Initial commit)
 });
 </script>
 '''
@@ -681,6 +920,19 @@ $(document).ready(function() {
 SETTINGS_SCRIPTS = '''
 <script>
 $(document).ready(function() {
+<<<<<<< HEAD
+    $('#runOptimization').click(function() {
+        var params = {
+            distance_method: $('input[name="distance_method"]:checked').val(),
+            optimization_method: $('input[name="optimization_method"]:checked').val(),
+            capacity_flexibility: parseInt($('#capacity_flexibility').val()),
+            ors_api_key: $('#ors_api_key').val()
+        };
+        
+        $('#runOptimization').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Running...');
+        $('.progress').show();
+        
+=======
     var progressInterval = null;
     var optimizationRunning = false;
     
@@ -715,11 +967,31 @@ $(document).ready(function() {
         startProgressPolling();
         
         // Start the optimization
+>>>>>>> d82959d (Initial commit)
         $.ajax({
             url: '/run_optimization',
             type: 'POST',
             contentType: 'application/json',
             data: JSON.stringify(params),
+<<<<<<< HEAD
+            success: function(response) {
+                $('#runOptimization').prop('disabled', false).html('<i class="fas fa-play"></i> Run Optimization');
+                $('.progress').hide();
+                if (response.status === 'success') {
+                    $('#optimizationLogs').text(response.logs);
+                    alert('Optimization completed! Check Results tab.');
+                } else {
+                    $('#optimizationLogs').text('Error: ' + response.message + '\\n\\n' + (response.logs || ''));
+                    alert('Optimization failed: ' + response.message);
+                }
+            },
+            error: function() {
+                $('#runOptimization').prop('disabled', false).html('<i class="fas fa-play"></i> Run Optimization');
+                $('.progress').hide();
+                alert('Network error occurred');
+            }
+        });
+=======
             timeout: 300000, // 5 minute timeout
             success: function(response) {
                 optimizationRunning = false;
@@ -848,6 +1120,7 @@ $(document).ready(function() {
     // Clean up polling when page is unloaded
     $(window).on('beforeunload', function() {
         stopProgressPolling();
+>>>>>>> d82959d (Initial commit)
     });
 });
 </script>
@@ -858,6 +1131,8 @@ RESULTS_SCRIPTS = '''
 $(document).ready(function() {
     loadOptimizationResults();
     
+<<<<<<< HEAD
+=======
     $('#exportResults').click(function() {
         window.location.href = '/export_results';
     });
@@ -894,6 +1169,7 @@ $(document).ready(function() {
         }, 3000);
     });
     
+>>>>>>> d82959d (Initial commit)
     function loadOptimizationResults() {
         $.get('/get_optimization_data', function(data) {
             if (data.status === 'success') {
@@ -903,25 +1179,37 @@ $(document).ready(function() {
             } else {
                 $('#summaryTable').html('<div class="alert alert-warning">No optimization results available. Please run optimization first.</div>');
             }
+<<<<<<< HEAD
+=======
         }).fail(function() {
             $('#summaryTable').html('<div class="alert alert-danger">Error loading optimization data.</div>');
+>>>>>>> d82959d (Initial commit)
         });
     }
     
     function createSummaryTable(data) {
         var reassignedCount = data.results.filter(r => r.current_assignment !== r.optimized_assignment).length;
         var totalTimeSaved = data.results.reduce((sum, r) => sum + r.improvement_minutes, 0);
+<<<<<<< HEAD
+=======
         var avgTimeSaved = totalTimeSaved / data.results.length;
         var reassignedPercentage = ((reassignedCount/data.results.length)*100).toFixed(1);
+>>>>>>> d82959d (Initial commit)
         
         var summaryHtml = `
             <table class="table table-striped">
                 <tr><td><strong>Algorithm</strong></td><td>${data.method}</td></tr>
+<<<<<<< HEAD
+                <tr><td><strong>Total Districts</strong></td><td>${data.results.length}</td></tr>
+                <tr><td><strong>Districts Reassigned</strong></td><td>${reassignedCount}</td></tr>
+                <tr><td><strong>Total Time Saved (minutes)</strong></td><td>${totalTimeSaved.toFixed(2)}</td></tr>
+=======
                 <tr><td><strong>Distance Method</strong></td><td>${data.distance_method}</td></tr>
                 <tr><td><strong>Total Districts</strong></td><td>${data.results.length}</td></tr>
                 <tr><td><strong>Districts Reassigned</strong></td><td>${reassignedCount} (${reassignedPercentage}%)</td></tr>
                 <tr><td><strong>Total Time Saved</strong></td><td>${totalTimeSaved.toFixed(2)} minutes</td></tr>
                 <tr><td><strong>Average Time Saved per District</strong></td><td>${avgTimeSaved.toFixed(2)} minutes</td></tr>
+>>>>>>> d82959d (Initial commit)
             </table>
         `;
         $('#summaryTable').html(summaryHtml);
@@ -945,6 +1233,16 @@ $(document).ready(function() {
         });
     }
     
+<<<<<<< HEAD
+    function loadPlots() {
+        $.get('/generate_plots', function(data) {
+            if (data.utilization_plot && data.improvement_plot) {
+                Plotly.newPlot('utilizationPlot', JSON.parse(data.utilization_plot).data, JSON.parse(data.utilization_plot).layout);
+                Plotly.newPlot('improvementPlot', JSON.parse(data.improvement_plot).data, JSON.parse(data.improvement_plot).layout);
+            }
+        });
+    }
+=======
     function loadPlots(forceRefresh = false) {
         // Add cache busting parameter
         var url = '/generate_plots';
@@ -1022,6 +1320,7 @@ $(document).ready(function() {
         $('#currentTravelHistogram').html(errorHtml);
         $('#optimizedTravelHistogram').html(errorHtml);
     }
+>>>>>>> d82959d (Initial commit)
 });
 </script>
 '''
@@ -1032,12 +1331,22 @@ $(document).ready(function() {
     $.get('/generate_map', function(data) {
         $('#networkMap').html(data);
     }).fail(function() {
+<<<<<<< HEAD
+        $('#networkMap').html('<div class="alert alert-warning">No optimization results available. Please upload data and run optimization first.</div>');
+=======
         $('#networkMap').html('<div class="alert alert-warning">No optimization results available. Please run optimization first.</div>');
+>>>>>>> d82959d (Initial commit)
+    });
+    
+    $('#downloadMapBtn').click(function() {
+        window.location.href = '/download_map';
     });
 });
 </script>
 '''
 
+<<<<<<< HEAD
+=======
 ISOCHRONE_SCRIPTS = '''
 <script>
 $(document).ready(function() {
@@ -1073,6 +1382,7 @@ $(document).ready(function() {
                     $('#isochroneMap').html(response.map_html);
                     $('#districtsInIsochrone').html(response.districts_html);
                     $('#isochroneStatus').html('<div class="alert alert-success">Isochrone generated successfully!</div>');
+                    $('#downloadIsochroneBtn').show();
                 } else {
                     $('#isochroneStatus').html('<div class="alert alert-danger">Error: ' + response.message + '</div>');
                 }
@@ -1082,6 +1392,25 @@ $(document).ready(function() {
                 $('#isochroneStatus').html('<div class="alert alert-danger">Connection error. Please try again.</div>');
             }
         });
+    });
+    
+    $('#downloadIsochroneBtn').click(function() {
+        var selectedLab = $('#selectedLab').val();
+        var method = $('input[name="isochrone_method"]:checked').val();
+        var travelTime = parseInt($('#travelTime').val());
+        
+        if (!selectedLab) {
+            alert('Please generate an isochrone first');
+            return;
+        }
+        
+        var params = new URLSearchParams({
+            lab_name: selectedLab,
+            method: method,
+            travel_time: travelTime
+        });
+        
+        window.location.href = '/download_isochrone?' + params.toString();
     });
     
     function loadLabOptions() {
@@ -1099,14 +1428,18 @@ $(document).ready(function() {
 </script>
 '''
 
+>>>>>>> d82959d (Initial commit)
 # OPTIMIZATION AND UTILITY CLASSES
 class OptimizationLogger:
     def __init__(self):
         self.logs = []
         self.progress = 0
+<<<<<<< HEAD
+=======
         self.current_stage = "Ready"
         self.total_steps = 100
         self.current_step = 0
+>>>>>>> d82959d (Initial commit)
     
     def log(self, message, log_type="INFO"):
         timestamp = datetime.now().strftime("%H:%M:%S")
@@ -1114,6 +1447,12 @@ class OptimizationLogger:
         self.logs.append(log_entry)
         print(log_entry)  # Also print to console for debugging
     
+<<<<<<< HEAD
+    def update_progress(self, progress, message=""):
+        self.progress = progress
+        if message:
+            self.log(f"Progress: {progress}% - {message}")
+=======
     def update_progress(self, progress, stage="", message=""):
         # Round progress to 2 decimal places
         self.progress = round(max(0, min(100, progress)), 2)
@@ -1134,6 +1473,7 @@ class OptimizationLogger:
             'stage': self.current_stage,
             'logs': self.get_logs()
         }
+>>>>>>> d82959d (Initial commit)
     
     def get_logs(self):
         return "\n".join(self.logs)
@@ -1141,22 +1481,52 @@ class OptimizationLogger:
     def clear(self):
         self.logs = []
         self.progress = 0
+<<<<<<< HEAD
+=======
         self.current_stage = "Ready"
         self.current_step = 0
+>>>>>>> d82959d (Initial commit)
 
 logger = OptimizationLogger()
 
 class DistanceCalculator:
     @staticmethod
     def euclidean_distance_time(start_coords, end_coords, avg_speed_kmh=30):
+<<<<<<< HEAD
+        """Calculate travel time using geodesic distance and average speed"""
+        try:
+            distance_km = geodesic(start_coords, end_coords).kilometers
+            return (distance_km / avg_speed_kmh) * 60  # Return minutes
+        except Exception as e:
+            logger.log(f"Error calculating euclidean distance: {e}", "ERROR")
+            return 999  # Return large number if calculation fails
+=======
         """Calculate travel time using euclidean distance"""
         distance_km = geodesic(start_coords, end_coords).kilometers
         return (distance_km / avg_speed_kmh) * 60  # Convert to minutes
+>>>>>>> d82959d (Initial commit)
     
     @staticmethod
     def openroute_service_time(start_coords, end_coords, api_key, delay=1):
         """Calculate travel time using OpenRouteService API"""
         try:
+<<<<<<< HEAD
+            time.sleep(delay)  # Rate limiting
+            url = "https://api.openrouteservice.org/v2/directions/driving-car"
+            headers = {'Authorization': f'Bearer {api_key}', 'Content-Type': 'application/json'}
+            body = {"coordinates": [[start_coords[1], start_coords[0]], [end_coords[1], end_coords[0]]]}
+            
+            response = requests.post(url, headers=headers, json=body, timeout=30)
+            if response.status_code == 200:
+                result = response.json()
+                return result['routes'][0]['summary']['duration'] / 60  # Convert to minutes
+            else:
+                logger.log(f"API error {response.status_code}, falling back to euclidean", "WARNING")
+                return DistanceCalculator.euclidean_distance_time(start_coords, end_coords)
+        except Exception as e:
+            logger.log(f"API request failed: {e}, falling back to euclidean", "WARNING")
+            return DistanceCalculator.euclidean_distance_time(start_coords, end_coords)
+=======
             if delay > 0:
                 time.sleep(delay)  # Rate limiting
                 
@@ -1254,10 +1624,59 @@ class DistanceCalculator:
                 
         except Exception as e:
             return False, f"Connection error: {str(e)}"
+>>>>>>> d82959d (Initial commit)
 
 class NetworkOptimizer:
     @staticmethod
     def linear_programming_optimization(travel_times, capacities, demands, capacity_flex=0.05):
+<<<<<<< HEAD
+        """Solve using linear programming for optimal solution"""
+        logger.log("Starting Linear Programming optimization")
+        try:
+            n_districts, n_labs = travel_times.shape
+            
+            prob = pulp.LpProblem("LabAssignment", pulp.LpMinimize)
+            x = {}
+            for i in range(n_districts):
+                for j in range(n_labs):
+                    x[i,j] = pulp.LpVariable(f"x_{i}_{j}", cat='Binary')
+            
+            # Objective function: minimize total weighted travel time
+            prob += pulp.lpSum([travel_times[i,j] * demands[i] * x[i,j] for i in range(n_districts) for j in range(n_labs)])
+            
+            # Constraints
+            # Each district must be assigned to exactly one lab
+            for i in range(n_districts):
+                prob += pulp.lpSum([x[i,j] for j in range(n_labs)]) == 1
+            
+            # Lab capacity constraints
+            for j in range(n_labs):
+                prob += pulp.lpSum([demands[i] * x[i,j] for i in range(n_districts)]) <= capacities[j] * (1 + capacity_flex)
+            
+            prob.solve(pulp.PULP_CBC_CMD(msg=0))
+            
+            if prob.status == pulp.LpStatusOptimal:
+                assignment_matrix = np.zeros((n_districts, n_labs))
+                for i in range(n_districts):
+                    for j in range(n_labs):
+                        if x[i,j].varValue:
+                            assignment_matrix[i,j] = x[i,j].varValue
+                
+                lab_loads = np.array([sum(demands[i] * assignment_matrix[i,j] for i in range(n_districts)) for j in range(n_labs)])
+                
+                logger.log(f"Optimization successful! Objective value: {pulp.value(prob.objective):.2f}")
+                return {
+                    'assignment': assignment_matrix,
+                    'lab_loads': lab_loads,
+                    'objective_value': pulp.value(prob.objective),
+                    'status': 'optimal'
+                }
+            else:
+                logger.log(f"Optimization failed with status: {pulp.LpStatus[prob.status]}", "ERROR")
+                return None
+        except Exception as e:
+            logger.log(f"Linear programming failed: {e}", "ERROR")
+=======
         """Solve the assignment problem using linear programming"""
         logger.log("Starting Linear Programming optimization")
         logger.update_progress(78, "Linear Programming", "Creating optimization model")
@@ -1321,10 +1740,61 @@ class NetworkOptimizer:
             }
         else:
             logger.log(f"Linear programming failed with status: {pulp.LpStatus[prob.status]}", "ERROR")
+>>>>>>> d82959d (Initial commit)
             return None
     
     @staticmethod
     def greedy_optimization(travel_times, capacities, demands):
+<<<<<<< HEAD
+        """Solve using greedy heuristic for fast approximate solution"""
+        logger.log("Starting Greedy optimization")
+        try:
+            n_districts, n_labs = travel_times.shape
+            assignments = np.full(n_districts, -1)
+            remaining_capacity = capacities.copy()
+            
+            # Sort districts by demand (largest first) for better results
+            demand_order = np.argsort(demands)[::-1]
+            
+            for i in demand_order:
+                # Sort labs by travel time for this district
+                lab_order = np.argsort(travel_times[i, :])
+                assigned = False
+                
+                for j in lab_order:
+                    if remaining_capacity[j] >= demands[i]:
+                        assignments[i] = j
+                        remaining_capacity[j] -= demands[i]
+                        assigned = True
+                        break
+                
+                # If no lab has enough capacity, assign to lab with most remaining capacity
+                if not assigned:
+                    best_lab = np.argmax(remaining_capacity)
+                    assignments[i] = best_lab
+                    remaining_capacity[best_lab] = max(0, remaining_capacity[best_lab] - demands[i])
+                    logger.log(f"District {i} assigned to overloaded lab {best_lab}", "WARNING")
+            
+            # Convert to assignment matrix
+            assignment_matrix = np.zeros((n_districts, n_labs))
+            for i in range(n_districts):
+                if assignments[i] >= 0:
+                    assignment_matrix[i, assignments[i]] = 1
+            
+            lab_loads = np.array([sum(demands[i] * assignment_matrix[i,j] for i in range(n_districts)) for j in range(n_labs)])
+            objective_value = np.sum(assignment_matrix * travel_times * demands.reshape(-1, 1))
+            
+            logger.log(f"Greedy optimization completed! Objective value: {objective_value:.2f}")
+            return {
+                'assignment': assignment_matrix,
+                'lab_loads': lab_loads,
+                'objective_value': objective_value,
+                'status': 'optimal'
+            }
+        except Exception as e:
+            logger.log(f"Greedy optimization failed: {e}", "ERROR")
+            return None
+=======
         """Solve using a greedy heuristic"""
         logger.log("Starting Greedy optimization")
         logger.update_progress(78, "Greedy Algorithm", "Initializing greedy assignment")
@@ -1384,9 +1854,123 @@ class NetworkOptimizer:
             'status': 'optimal'
         }
 
+def create_standalone_map_html(map_html, title="Diagnostic Network Map"):
+    """Create a standalone HTML file with the map"""
+    standalone_html = f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{title}</title>
+    <style>
+        body {{
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+        }}
+        .header {{
+            background-color: #007bff;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            margin-bottom: 20px;
+            border-radius: 8px;
+        }}
+        .map-container {{
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }}
+        .legend {{
+            margin-bottom: 15px;
+            padding: 10px;
+            background-color: #e9ecef;
+            border-radius: 4px;
+            font-size: 14px;
+        }}
+        .footer {{
+            text-align: center;
+            margin-top: 20px;
+            color: #666;
+            font-size: 12px;
+        }}
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>{title}</h1>
+        <p>Generated on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</p>
+    </div>
+    <div class="map-container">
+        <div class="legend">
+            <strong>Legend:</strong> 🔴 Red markers: CDST Labs | 🔵 Blue circles: District HQs | 🟢 Green lines: New assignments
+        </div>
+        {map_html}
+    </div>
+    <div class="footer">
+        <p>Diagnostic Network Optimization Tool - PATH | <a href="https://www.path.org" target="_blank">www.path.org</a></p>
+    </div>
+</body>
+</html>"""
+    return standalone_html
+>>>>>>> d82959d (Initial commit)
+
 # FLASK ROUTES
 @app.route('/')
 def index():
+<<<<<<< HEAD
+    from markupsafe import Markup
+    content = Markup(INDEX_CONTENT)
+    extra_scripts = Markup(COMMON_SCRIPTS)
+    return render_template_string(BASE_TEMPLATE, content=content, extra_scripts=extra_scripts)
+
+@app.route('/data_input')
+def data_input():
+    from markupsafe import Markup
+    content = Markup(DATA_INPUT_CONTENT)
+    extra_scripts = Markup(UPLOAD_SCRIPTS)
+    return render_template_string(BASE_TEMPLATE, content=content, extra_scripts=extra_scripts)
+
+@app.route('/settings')
+def settings():
+    from markupsafe import Markup
+    content = Markup(SETTINGS_CONTENT)
+    extra_scripts = Markup(SETTINGS_SCRIPTS)
+    return render_template_string(BASE_TEMPLATE, content=content, extra_scripts=extra_scripts)
+
+@app.route('/results')
+def results():
+    from markupsafe import Markup
+    content = Markup(RESULTS_CONTENT)
+    extra_scripts = Markup(RESULTS_SCRIPTS)
+    return render_template_string(BASE_TEMPLATE, content=content, extra_scripts=extra_scripts)
+
+@app.route('/map')
+def map_view():
+    from markupsafe import Markup
+    content = Markup(MAP_CONTENT)
+    extra_scripts = Markup(MAP_SCRIPTS)
+    return render_template_string(BASE_TEMPLATE, content=content, extra_scripts=extra_scripts)
+
+@app.route('/about')
+def about():
+    from markupsafe import Markup
+    content = Markup(ABOUT_CONTENT)
+    extra_scripts = Markup(COMMON_SCRIPTS)
+    return render_template_string(BASE_TEMPLATE, content=content, extra_scripts=extra_scripts)
+
+@app.route('/download_template/<template_type>')
+def download_template(template_type):
+    if template_type == 'district':
+        template = pd.DataFrame({
+            'district': ['Sample District 1', 'Sample District 2'],
+            'current_cdst': ['CDST Lab A', 'CDST Lab B'],
+            'lat': [25.5937, 26.2124],
+            'lon': [85.1376, 78.1772],
+            'tests_per_quarter': [150, 200]
+=======
     # Optional: Uncomment the next line to clear session on every home page visit
     # session.clear()
     content = INDEX_CONTENT
@@ -1408,1129 +1992,4 @@ def data_input():
 @app.route('/settings')
 def settings():
     content = SETTINGS_CONTENT
-    return render_template_string(BASE_TEMPLATE, content=content, extra_scripts=SETTINGS_SCRIPTS)
-
-@app.route('/results')
-def results():
-    content = RESULTS_CONTENT
-    return render_template_string(BASE_TEMPLATE, content=content, extra_scripts=RESULTS_SCRIPTS)
-
-@app.route('/map')
-def map_view():
-    content = MAP_CONTENT
-    return render_template_string(BASE_TEMPLATE, content=content, extra_scripts=MAP_SCRIPTS)
-
-@app.route('/isochrone')
-def isochrone():
-    content = ISOCHRONE_CONTENT
-    return render_template_string(BASE_TEMPLATE, content=content, extra_scripts=ISOCHRONE_SCRIPTS)
-
-@app.route('/about')
-def about():
-    content = ABOUT_CONTENT
-    return render_template_string(BASE_TEMPLATE, content=content, extra_scripts=COMMON_SCRIPTS)
-
-@app.route('/download_template/<template_type>')
-def download_template(template_type):
-    """Generate and download template files"""
-    if template_type == 'district':
-        template = pd.DataFrame({
-            'District': ['Sample District 1', 'Sample District 2', 'Sample District 3'],
-            'CDST Lab linked to currently': ['CDST Lab A', 'CDST Lab B', 'CDST Lab A'],
-            'Latitude of District HQ': [28.6139, 26.2124, 25.5937],
-            'Longitude of District HQ': [77.2090, 78.1772, 85.1376],
-            'Presumptive tests in one quarter': [150, 200, 175]
-        })
-        filename = 'district_lab_template.csv'
-    else:
-        template = pd.DataFrame({
-            'Name of CDST Lab linked': ['CDST Lab A', 'CDST Lab B', 'CDST Lab C'],
-            'Address': ['123 Main St, Delhi', '456 Park Ave, Lucknow', '789 Central Rd, Patna'],
-            'Latitude': [28.6139, 26.2124, 25.5937],
-            'Longitude': [77.2090, 78.1772, 85.1376],
-            'Capacity of lab': [500, 750, 400]
-        })
-        filename = 'cdst_lab_template.csv'
-    
-    output = io.StringIO()
-    template.to_csv(output, index=False)
-    output.seek(0)
-    
-    return send_file(
-        io.BytesIO(output.getvalue().encode()), 
-        mimetype='text/csv', 
-        as_attachment=True, 
-        download_name=filename
-    )
-
-@app.route('/upload_data', methods=['POST'])
-def upload_data():
-    """Handle file uploads and data processing"""
-    try:
-        uploaded_files = []
-        
-        for file_type in ['district_file', 'cdst_file']:
-            if file_type in request.files:
-                file = request.files[file_type]
-                if file.filename != '':
-                    # Clear any existing data of this type first
-                    if file_type == 'district_file':
-                        session.pop('district_data', None)
-                    elif file_type == 'cdst_file':
-                        session.pop('cdst_data', None)
-                    
-                    df = pd.read_csv(file)
-                    uploaded_files.append(file_type)
-                    
-                    if file_type == 'district_file':
-                        # Handle your specific CSV format
-                        if 'District' in df.columns:
-                            df = df.rename(columns={
-                                'District': 'district',
-                                'CDST Lab linked to currently': 'current_cdst',
-                                'Latitude of District HQ': 'lat',
-                                'Longitude of District HQ': 'lon',
-                                'Presumptive tests in one quarter': 'tests_per_quarter'
-                            })
-                        
-                        # Validate required columns
-                        required_cols = ['district', 'current_cdst', 'lat', 'lon', 'tests_per_quarter']
-                        missing_cols = [col for col in required_cols if col not in df.columns]
-                        if missing_cols:
-                            return jsonify({
-                                'status': 'error', 
-                                'message': f'Missing columns in district file: {missing_cols}'
-                            })
-                        
-                        # Clean and validate data
-                        df['tests_per_quarter'] = pd.to_numeric(df['tests_per_quarter'], errors='coerce')
-                        df['lat'] = pd.to_numeric(df['lat'], errors='coerce')
-                        df['lon'] = pd.to_numeric(df['lon'], errors='coerce')
-                        
-                        # Remove rows with invalid data
-                        initial_rows = len(df)
-                        df = df.dropna(subset=['tests_per_quarter', 'lat', 'lon'])
-                        final_rows = len(df)
-                        
-                        if final_rows == 0:
-                            return jsonify({
-                                'status': 'error',
-                                'message': 'No valid data rows found in district file'
-                            })
-                        
-                        session['district_data'] = df.to_json()
-                        session.modified = True
-                        
-                        if initial_rows != final_rows:
-                            logger.log(f"Removed {initial_rows - final_rows} invalid rows from district data")
-                        
-                    elif file_type == 'cdst_file':
-                        # Handle your specific CSV format
-                        if 'Name of CDST Lab linked' in df.columns:
-                            df = df.rename(columns={
-                                'Name of CDST Lab linked': 'lab_name',
-                                'Address': 'address',
-                                'Latitude': 'lat',
-                                'Longitude': 'lon',
-                                'Capacity of lab': 'capacity'
-                            })
-                        
-                        # Validate required columns
-                        required_cols = ['lab_name', 'address', 'lat', 'lon', 'capacity']
-                        missing_cols = [col for col in required_cols if col not in df.columns]
-                        if missing_cols:
-                            return jsonify({
-                                'status': 'error', 
-                                'message': f'Missing columns in CDST file: {missing_cols}'
-                            })
-                        
-                        # Clean and validate data
-                        df['capacity'] = pd.to_numeric(df['capacity'], errors='coerce')
-                        df['lat'] = pd.to_numeric(df['lat'], errors='coerce')
-                        df['lon'] = pd.to_numeric(df['lon'], errors='coerce')
-                        
-                        # Remove rows with invalid data
-                        initial_rows = len(df)
-                        df = df.dropna(subset=['capacity', 'lat', 'lon'])
-                        final_rows = len(df)
-                        
-                        if final_rows == 0:
-                            return jsonify({
-                                'status': 'error',
-                                'message': 'No valid data rows found in CDST file'
-                            })
-                        
-                        session['cdst_data'] = df.to_json()
-                        session.modified = True
-                        
-                        if initial_rows != final_rows:
-                            logger.log(f"Removed {initial_rows - final_rows} invalid rows from CDST data")
-        
-        # Clear any old optimization results when new data is uploaded
-        if uploaded_files:
-            session.pop('optimization_results', None)
-            session.pop('lab_utilization', None)
-            session.modified = True
-        
-        if not uploaded_files:
-            return jsonify({'status': 'error', 'message': 'No valid files were uploaded'})
-        
-        return jsonify({
-            'status': 'success',
-            'message': f'Successfully uploaded: {", ".join(uploaded_files)}',
-            'files_uploaded': uploaded_files
-        })
-        
-    except Exception as e:
-        logger.log(f"Upload failed: {str(e)}", "ERROR")
-        return jsonify({'status': 'error', 'message': str(e)})
-
-@app.route('/validate_data')
-def validate_data():
-    """Validate uploaded data and return status"""
-    validation_status = {'districts': False, 'cdst': False, 'messages': []}
-    
-    # Debug information
-    session_keys = list(session.keys())
-    
-    if not session_keys:
-        validation_status['messages'].append("ℹ️  No data uploaded yet. Please upload your CSV files to get started.")
-        validation_status['messages'].append(f"🔧 Debug: Session is empty")
-        return jsonify(validation_status)
-    
-    # Check district data
-    if 'district_data' in session:
-        try:
-            district_json = session['district_data']
-            if not district_json or district_json == 'null':
-                validation_status['messages'].append("⏳ District lab data: Not uploaded (empty)")
-            else:
-                df = pd.read_json(district_json)
-                if df.empty:
-                    validation_status['messages'].append("⏳ District lab data: Not uploaded (empty dataframe)")
-                else:
-                    required_cols = ['district', 'current_cdst', 'lat', 'lon', 'tests_per_quarter']
-                    if all(col in df.columns for col in required_cols):
-                        validation_status['districts'] = True
-                        validation_status['messages'].append(f"✅ District lab data: {len(df)} records loaded")
-                        
-                        # Additional validation checks
-                        invalid_coords = df[(df['lat'].isna()) | (df['lon'].isna()) | 
-                                          (df['lat'] == 0) | (df['lon'] == 0)].shape[0]
-                        if invalid_coords > 0:
-                            validation_status['messages'].append(f"⚠️  Warning: {invalid_coords} districts have invalid coordinates")
-                        
-                        invalid_tests = df[(df['tests_per_quarter'].isna()) | 
-                                          (df['tests_per_quarter'] <= 0)].shape[0]
-                        if invalid_tests > 0:
-                            validation_status['messages'].append(f"⚠️  Warning: {invalid_tests} districts have invalid test counts")
-                    else:
-                        missing_cols = [col for col in required_cols if col not in df.columns]
-                        validation_status['messages'].append(f"❌ District lab data: Missing columns: {missing_cols}")
-        except Exception as e:
-            validation_status['messages'].append(f"❌ District lab data error: {str(e)}")
-            # Clear corrupted data
-            session.pop('district_data', None)
-    else:
-        validation_status['messages'].append("⏳ District lab data: Not uploaded")
-    
-    # Check CDST data
-    if 'cdst_data' in session:
-        try:
-            cdst_json = session['cdst_data']
-            if not cdst_json or cdst_json == 'null':
-                validation_status['messages'].append("⏳ CDST lab data: Not uploaded (empty)")
-            else:
-                df = pd.read_json(cdst_json)
-                if df.empty:
-                    validation_status['messages'].append("⏳ CDST lab data: Not uploaded (empty dataframe)")
-                else:
-                    required_cols = ['lab_name', 'address', 'lat', 'lon', 'capacity']
-                    if all(col in df.columns for col in required_cols):
-                        validation_status['cdst'] = True
-                        validation_status['messages'].append(f"✅ CDST lab data: {len(df)} records loaded")
-                        
-                        # Additional validation checks
-                        invalid_coords = df[(df['lat'].isna()) | (df['lon'].isna()) | 
-                                          (df['lat'] == 0) | (df['lon'] == 0)].shape[0]
-                        if invalid_coords > 0:
-                            validation_status['messages'].append(f"⚠️  Warning: {invalid_coords} CDST labs have invalid coordinates")
-                        
-                        invalid_capacity = df[(df['capacity'].isna()) | 
-                                            (df['capacity'] <= 0)].shape[0]
-                        if invalid_capacity > 0:
-                            validation_status['messages'].append(f"⚠️  Warning: {invalid_capacity} CDST labs have invalid capacity")
-                    else:
-                        missing_cols = [col for col in required_cols if col not in df.columns]
-                        validation_status['messages'].append(f"❌ CDST lab data: Missing columns: {missing_cols}")
-        except Exception as e:
-            validation_status['messages'].append(f"❌ CDST lab data error: {str(e)}")
-            # Clear corrupted data
-            session.pop('cdst_data', None)
-    else:
-        validation_status['messages'].append("⏳ CDST lab data: Not uploaded")
-    
-    # Check if optimization has been run
-    if 'optimization_results' in session:
-        try:
-            results_json = session['optimization_results']
-            if results_json and results_json != 'null':
-                results_df = pd.read_json(results_json)
-                if not results_df.empty:
-                    validation_status['messages'].append("🎯 Optimization results available")
-        except:
-            session.pop('optimization_results', None)
-    
-    # Add debug info
-    validation_status['messages'].append(f"🔧 Debug: Session keys: {session_keys}")
-    
-    return jsonify(validation_status)
-
-@app.route('/clear_session', methods=['POST'])
-def clear_session():
-    """Clear all session data"""
-    try:
-        # Get keys before clearing for debugging
-        old_keys = list(session.keys())
-        
-        # Clear the entire session
-        session.clear()
-        
-        # Force session modification
-        session.modified = True
-        
-        # Verify session is empty
-        remaining_keys = list(session.keys())
-        
-        return jsonify({
-            'status': 'success', 
-            'message': 'All session data cleared',
-            'debug': {
-                'old_keys': old_keys,
-                'remaining_keys': remaining_keys
-            }
-        })
-    except Exception as e:
-        return jsonify({'status': 'error', 'message': str(e)})
-
-@app.route('/debug_session')
-def debug_session():
-    """Debug route to see what's in the session"""
-    session_info = {}
-    for key in session.keys():
-        try:
-            value = session[key]
-            if isinstance(value, str):
-                if len(value) > 100:
-                    session_info[key] = f"String data ({len(value)} characters)"
-                else:
-                    session_info[key] = value
-            else:
-                session_info[key] = str(type(value))
-        except:
-            session_info[key] = "Error reading value"
-    
-    return jsonify({
-        'session_keys': list(session.keys()),
-        'session_info': session_info,
-        'session_id': request.cookies.get('session', 'No session cookie')
-    })
-
-@app.route('/hard_reset', methods=['POST'])
-def hard_reset():
-    """Nuclear option - completely reset everything"""
-    try:
-        # Clear session
-        session.clear()
-        session.modified = True
-        
-        # Clear any global variables if they exist
-        global logger
-        logger.clear()
-        
-        return jsonify({
-            'status': 'success', 
-            'message': 'Complete reset performed',
-            'remaining_keys': list(session.keys())
-        })
-    except Exception as e:
-        return jsonify({'status': 'error', 'message': str(e)})
-
-@app.route('/debug_plots')
-def debug_plots():
-    """Debug route to check plot data"""
-    if 'optimization_results' not in session:
-        return jsonify({'error': 'No optimization results in session'})
-    
-    try:
-        results_df = pd.read_json(session['optimization_results'])
-        utilization_df = pd.read_json(session['lab_utilization'])
-        
-        debug_info = {
-            'results_shape': results_df.shape,
-            'results_columns': list(results_df.columns),
-            'utilization_shape': utilization_df.shape,
-            'utilization_columns': list(utilization_df.columns),
-            'sample_results': results_df.head(3).to_dict('records'),
-            'sample_utilization': utilization_df.head(3).to_dict('records'),
-            'current_travel_time_stats': {
-                'count': len(results_df['current_travel_time'].dropna()),
-                'min': float(results_df['current_travel_time'].min()),
-                'max': float(results_df['current_travel_time'].max()),
-                'mean': float(results_df['current_travel_time'].mean())
-            },
-            'optimized_travel_time_stats': {
-                'count': len(results_df['optimized_travel_time'].dropna()),
-                'min': float(results_df['optimized_travel_time'].min()),
-                'max': float(results_df['optimized_travel_time'].max()),
-                'mean': float(results_df['optimized_travel_time'].mean())
-            }
-        }
-        
-        return jsonify(debug_info)
-    except Exception as e:
-        return jsonify({'error': str(e)})
-
-@app.route('/force_clear_results', methods=['POST'])
-def force_clear_results():
-    """Force clear optimization results to start fresh"""
-    try:
-        # Clear only optimization results, keep the input data
-        session.pop('optimization_results', None)
-        session.pop('lab_utilization', None)
-        session.pop('optimization_method', None)
-        session.pop('distance_method', None)
-        session.modified = True
-        
-        return jsonify({'status': 'success', 'message': 'Optimization results cleared. Please re-run optimization.'})
-    except Exception as e:
-        return jsonify({'status': 'error', 'message': str(e)})
-
-@app.route('/get_optimization_progress')
-def get_optimization_progress():
-    """Get current optimization progress"""
-    return jsonify(logger.get_progress_info())
-
-@app.route('/run_optimization', methods=['POST'])
-def run_optimization():
-    """Run the optimization algorithm with real-time progress tracking"""
-    try:
-        logger.clear()
-        logger.set_stage("Initializing", 0)
-        params = request.json
-        
-        # Check if data is uploaded
-        if 'district_data' not in session or 'cdst_data' not in session:
-            return jsonify({'status': 'error', 'message': 'Please upload data files first'})
-        
-        district_df = pd.read_json(session['district_data'])
-        cdst_df = pd.read_json(session['cdst_data'])
-        
-        logger.log("=== OPTIMIZATION STARTED ===")
-        logger.log(f"Districts: {len(district_df)}, CDST Labs: {len(cdst_df)}")
-        logger.update_progress(5, "Data Validation", "Data loaded successfully")
-        
-        # Calculate travel time matrix
-        n_districts, n_labs = len(district_df), len(cdst_df)
-        travel_times = np.zeros((n_districts, n_labs))
-        
-        distance_method = params.get('distance_method', 'euclidean')
-        logger.log(f"Using distance method: {distance_method}")
-        logger.update_progress(10, "Distance Calculation Setup", f"Calculating {n_districts * n_labs} distance pairs")
-        
-        # Calculate distances based on selected method
-        total_calculations = n_districts * n_labs
-        completed = 0
-        
-        # Progress tracking for distance calculations (10% to 70% of total progress)
-        distance_progress_start = 10
-        distance_progress_end = 70
-        
-        for i in range(n_districts):
-            for j in range(n_labs):
-                start_coords = (district_df.iloc[i]['lat'], district_df.iloc[i]['lon'])
-                end_coords = (cdst_df.iloc[j]['lat'], cdst_df.iloc[j]['lon'])
-                
-                if distance_method == 'ors_api':
-                    # Use hardcoded API key
-                    travel_time = DistanceCalculator.openroute_service_time(start_coords, end_coords, ORS_API_KEY)
-                elif distance_method == 'osrm_api':
-                    travel_time = DistanceCalculator.osrm_api_time(start_coords, end_coords)
-                else:
-                    travel_time = DistanceCalculator.euclidean_distance_time(start_coords, end_coords)
-                
-                travel_times[i, j] = travel_time
-                completed += 1
-                
-                # Update progress every 5% of calculations or every 20 calculations, whichever is less frequent
-                update_frequency = max(1, min(total_calculations // 20, total_calculations // 20))
-                if completed % update_frequency == 0 or completed == total_calculations:
-                    calc_progress = (completed / total_calculations)
-                    overall_progress = distance_progress_start + (calc_progress * (distance_progress_end - distance_progress_start))
-                    
-                    stage_msg = f"Distance Calculation ({completed}/{total_calculations})"
-                    detail_msg = f"Calculated distances for {completed} pairs using {distance_method}"
-                    logger.update_progress(round(overall_progress, 2), stage_msg, detail_msg)
-        
-        logger.update_progress(75, "Optimization Setup", "Distance calculations completed, setting up optimization")
-        logger.log("Distance calculations completed")
-        
-        # Run optimization
-        capacities = cdst_df['capacity'].values
-        demands = district_df['tests_per_quarter'].values
-        capacity_flex = params.get('capacity_flexibility', 5) / 100
-        
-        logger.log(f"Total demand: {demands.sum()}, Total capacity: {capacities.sum()}")
-        logger.log(f"Capacity flexibility: {capacity_flex*100}%")
-        
-        if params.get('optimization_method') == 'linear_programming':
-            logger.update_progress(80, "Linear Programming", "Running linear programming optimization")
-            result = NetworkOptimizer.linear_programming_optimization(
-                travel_times, capacities, demands, capacity_flex
-            )
-        else:
-            logger.update_progress(80, "Greedy Algorithm", "Running greedy heuristic optimization")
-            result = NetworkOptimizer.greedy_optimization(travel_times, capacities, demands)
-        
-        if result is None:
-            logger.update_progress(100, "Failed", "Optimization failed - no feasible solution found")
-            return jsonify({
-                'status': 'error', 
-                'message': 'Optimization failed - no feasible solution found',
-                'logs': logger.get_logs()
-            })
-        
-        logger.update_progress(85, "Processing Results", "Optimization completed, processing results")
-        
-        # Process results
-        assignment_matrix = result['assignment']
-        results_data = []
-        
-        for i in range(n_districts):
-            assigned_lab_idx = np.argmax(assignment_matrix[i, :])
-            optimized_assignment = cdst_df.iloc[assigned_lab_idx]['lab_name']
-            optimized_travel_time = travel_times[i, assigned_lab_idx]
-            
-            # Find current assignment travel time
-            current_cdst = district_df.iloc[i]['current_cdst']
-            current_lab_mask = cdst_df['lab_name'] == current_cdst
-            if current_lab_mask.any():
-                current_lab_idx = cdst_df[current_lab_mask].index[0]
-                current_travel_time = travel_times[i, current_lab_idx]
-            else:
-                current_travel_time = optimized_travel_time  # If current assignment not found
-                logger.log(f"Warning: Current assignment '{current_cdst}' not found for district {district_df.iloc[i]['district']}", "WARNING")
-            
-            results_data.append({
-                'district': district_df.iloc[i]['district'],
-                'current_assignment': current_cdst,
-                'optimized_assignment': optimized_assignment,
-                'current_travel_time': current_travel_time,
-                'optimized_travel_time': optimized_travel_time,
-                'improvement_minutes': current_travel_time - optimized_travel_time,
-                'tests_per_quarter': district_df.iloc[i]['tests_per_quarter'],
-                'district_lat': district_df.iloc[i]['lat'],
-                'district_lon': district_df.iloc[i]['lon']
-            })
-        
-        results_df = pd.DataFrame(results_data)
-        logger.update_progress(90, "Calculating Utilization", "Computing lab utilization statistics")
-        
-        # Calculate lab utilization
-        utilization_data = []
-        for j in range(n_labs):
-            lab_name = cdst_df.iloc[j]['lab_name']
-            capacity = cdst_df.iloc[j]['capacity']
-            optimized_load = result['lab_loads'][j]
-            
-            # Calculate current load
-            current_assignments = district_df[district_df['current_cdst'] == lab_name]
-            current_load = current_assignments['tests_per_quarter'].sum() if not current_assignments.empty else 0
-            
-            utilization_data.append({
-                'lab_name': lab_name,
-                'capacity': capacity,
-                'current_load': current_load,
-                'optimized_load': optimized_load,
-                'current_utilization': (current_load / capacity) * 100 if capacity > 0 else 0,
-                'optimized_utilization': (optimized_load / capacity) * 100 if capacity > 0 else 0
-            })
-        
-        utilization_df = pd.DataFrame(utilization_data)
-        
-        logger.update_progress(95, "Saving Results", "Storing optimization results")
-        
-        # Store results in session
-        session['optimization_results'] = results_df.to_json()
-        session['lab_utilization'] = utilization_df.to_json()
-        session['optimization_method'] = params.get('optimization_method', 'linear_programming')
-        session['distance_method'] = distance_method
-        
-        # Log summary
-        total_time_saved = results_df['improvement_minutes'].sum()
-        reassigned_count = len(results_df[results_df['current_assignment'] != results_df['optimized_assignment']])
-        
-        logger.update_progress(100, "Completed", "Optimization completed successfully")
-        logger.log("=== OPTIMIZATION COMPLETED ===")
-        logger.log(f"Total time saved: {total_time_saved:.2f} minutes")
-        logger.log(f"Districts reassigned: {reassigned_count}/{len(results_df)}")
-        logger.log(f"Objective value: {result['objective_value']:.2f}")
-        
-        return jsonify({
-            'status': 'success',
-            'message': 'Optimization completed successfully!',
-            'logs': logger.get_logs(),
-            'summary': {
-                'total_time_saved': total_time_saved,
-                'districts_reassigned': reassigned_count,
-                'total_districts': len(results_df)
-            }
-        })
-        
-    except Exception as e:
-        logger.update_progress(100, "Error", f"Optimization failed: {str(e)}")
-        logger.log(f"Optimization failed: {str(e)}", "ERROR")
-        return jsonify({
-            'status': 'error', 
-            'message': str(e), 
-            'logs': logger.get_logs()
-        })
-
-@app.route('/get_optimization_data')
-def get_optimization_data():
-    """Return optimization results for display"""
-    if 'optimization_results' not in session:
-        return jsonify({'status': 'error', 'message': 'No results available'})
-    
-    try:
-        results_df = pd.read_json(session['optimization_results'])
-        utilization_df = pd.read_json(session['lab_utilization'])
-        
-        return jsonify({
-            'status': 'success',
-            'results': results_df.to_dict('records'),
-            'utilization': utilization_df.to_dict('records'),
-            'method': session.get('optimization_method', 'Unknown'),
-            'distance_method': session.get('distance_method', 'Unknown')
-        })
-    except Exception as e:
-        return jsonify({'status': 'error', 'message': str(e)})
-
-@app.route('/generate_plots')
-def generate_plots():
-    """Generate plotly charts for results visualization"""
-    if 'optimization_results' not in session:
-        return jsonify({'status': 'error', 'message': 'No data available'})
-    
-    try:
-        results_df = pd.read_json(session['optimization_results'])
-        utilization_df = pd.read_json(session['lab_utilization'])
-        
-        logger.log(f"Generating plots - Results: {results_df.shape}, Utilization: {utilization_df.shape}")
-        
-        # Validate data
-        if results_df.empty or utilization_df.empty:
-            return jsonify({'status': 'error', 'message': 'Empty dataframes'})
-        
-        # Lab utilization comparison plot - Simplified for debugging
-        utilization_plot = go.Figure()
-        
-        # Simple bar chart without complex features first
-        utilization_plot.add_trace(go.Bar(
-            name='Current', 
-            x=list(range(len(utilization_df))),  # Use indices instead of names
-            y=utilization_df['current_utilization'].tolist(), 
-            marker_color='lightcoral',
-            text=[f'{val:.0f}%' for val in utilization_df['current_utilization']],
-            textposition='outside'
-        ))
-        utilization_plot.add_trace(go.Bar(
-            name='Optimized', 
-            x=list(range(len(utilization_df))),  # Use indices instead of names
-            y=utilization_df['optimized_utilization'].tolist(), 
-            marker_color='lightblue',
-            text=[f'{val:.0f}%' for val in utilization_df['optimized_utilization']],
-            textposition='outside'
-        ))
-        
-        # Set x-axis to show lab names
-        utilization_plot.update_layout(
-            title='Lab Utilization Comparison (%)',
-            xaxis_title='CDST Labs',
-            yaxis_title='Utilization (%)',
-            barmode='group',
-            template='plotly_white',
-            height=400,
-            xaxis=dict(
-                tickmode='array',
-                tickvals=list(range(len(utilization_df))),
-                ticktext=[name[:15] + '...' if len(name) > 15 else name for name in utilization_df['lab_name']]
-            )
-        )
-        
-        # Travel time improvements plot - Check for improvements
-        improvements = results_df[results_df['improvement_minutes'] > 0.1]  # Filter for meaningful improvements
-        logger.log(f"Found {len(improvements)} districts with improvements > 0.1 minutes")
-        
-        if not improvements.empty:
-            improvements = improvements.nlargest(15, 'improvement_minutes')
-            improvement_plot = go.Figure([go.Bar(
-                x=improvements['improvement_minutes'].tolist(),
-                y=improvements['district'].tolist(),
-                orientation='h',
-                marker_color='steelblue',
-                text=[f'{val:.1f}' for val in improvements['improvement_minutes']],
-                textposition='outside'
-            )])
-            improvement_plot.update_layout(
-                title=f'Top {len(improvements)} Travel Time Improvements',
-                xaxis_title='Minutes Saved',
-                yaxis_title='Districts',
-                template='plotly_white',
-                height=400
-            )
-        else:
-            improvement_plot = go.Figure()
-            improvement_plot.add_annotation(
-                text="Current network is already well-optimized!<br>No significant improvements found.",
-                xref="paper", yref="paper",
-                x=0.5, y=0.5, showarrow=False,
-                font=dict(size=16, color="green")
-            )
-            improvement_plot.update_layout(
-                title='Travel Time Improvements Analysis',
-                template='plotly_white',
-                height=400
-            )
-        
-        # Current travel times histogram
-        current_times = results_df['current_travel_time'].dropna().tolist()
-        logger.log(f"Current travel times: count={len(current_times)}, range={min(current_times):.1f}-{max(current_times):.1f}")
-        
-        current_travel_histogram = go.Figure()
-        current_travel_histogram.add_trace(go.Histogram(
-            x=current_times,
-            nbinsx=12,
-            name='Current',
-            marker_color='lightcoral',
-            opacity=0.8
-        ))
-        current_travel_histogram.update_layout(
-            title=f'Current Travel Times<br><sub>Mean: {np.mean(current_times):.1f} min | Count: {len(current_times)} districts</sub>',
-            xaxis_title='Travel Time (minutes)',
-            yaxis_title='Number of Districts',
-            template='plotly_white',
-            height=400,
-            showlegend=False
-        )
-        
-        # Optimized travel times histogram
-        optimized_times = results_df['optimized_travel_time'].dropna().tolist()
-        logger.log(f"Optimized travel times: count={len(optimized_times)}, range={min(optimized_times):.1f}-{max(optimized_times):.1f}")
-        
-        optimized_travel_histogram = go.Figure()
-        optimized_travel_histogram.add_trace(go.Histogram(
-            x=optimized_times,
-            nbinsx=12,
-            name='Optimized',
-            marker_color='lightblue',
-            opacity=0.8
-        ))
-        optimized_travel_histogram.update_layout(
-            title=f'Optimized Travel Times<br><sub>Mean: {np.mean(optimized_times):.1f} min | Count: {len(optimized_times)} districts</sub>',
-            xaxis_title='Travel Time (minutes)',
-            yaxis_title='Number of Districts',
-            template='plotly_white',
-            height=400,
-            showlegend=False
-        )
-        
-        logger.log("Plot generation complete - preparing JSON response")
-        
-        response_data = {
-            'status': 'success',
-            'utilization_plot': json.dumps(utilization_plot, cls=plotly.utils.PlotlyJSONEncoder),
-            'improvement_plot': json.dumps(improvement_plot, cls=plotly.utils.PlotlyJSONEncoder),
-            'current_travel_histogram': json.dumps(current_travel_histogram, cls=plotly.utils.PlotlyJSONEncoder),
-            'optimized_travel_histogram': json.dumps(optimized_travel_histogram, cls=plotly.utils.PlotlyJSONEncoder)
-        }
-        
-        logger.log("JSON response prepared successfully")
-        return jsonify(response_data)
-        
-    except Exception as e:
-        error_msg = f"Plot generation error: {str(e)}"
-        logger.log(error_msg, "ERROR")
-        import traceback
-        logger.log(f"Traceback: {traceback.format_exc()}", "ERROR")
-        return jsonify({'status': 'error', 'message': error_msg})
-
-@app.route('/generate_map')
-def generate_map():
-    """Generate interactive folium map"""
-    if 'optimization_results' not in session:
-        return '<div class="alert alert-warning">No optimization results available.</div>'
-    
-    try:
-        results_df = pd.read_json(session['optimization_results'])
-        cdst_df = pd.read_json(session['cdst_data'])
-        
-        # Calculate map center
-        all_lats = list(results_df['district_lat']) + list(cdst_df['lat'])
-        all_lons = list(results_df['district_lon']) + list(cdst_df['lon'])
-        center_lat = sum(all_lats) / len(all_lats)
-        center_lon = sum(all_lons) / len(all_lons)
-        
-        # Create map
-        m = folium.Map(location=[center_lat, center_lon], zoom_start=6, tiles='OpenStreetMap')
-        
-        # Add CDST labs as red markers
-        for idx, lab in cdst_df.iterrows():
-            # Calculate utilization
-            utilization_df = pd.read_json(session['lab_utilization'])
-            lab_util = utilization_df[utilization_df['lab_name'] == lab['lab_name']]
-            if not lab_util.empty:
-                current_util = lab_util.iloc[0]['current_utilization']
-                optimized_util = lab_util.iloc[0]['optimized_utilization']
-                popup_text = f"<b>{lab['lab_name']}</b><br>" \
-                           f"{lab['address']}<br>" \
-                           f"Capacity: {lab['capacity']}<br>" \
-                           f"Current Utilization: {current_util:.1f}%<br>" \
-                           f"Optimized Utilization: {optimized_util:.1f}%"
-            else:
-                popup_text = f"<b>{lab['lab_name']}</b><br>{lab['address']}<br>Capacity: {lab['capacity']}"
-            
-            folium.Marker(
-                location=[lab['lat'], lab['lon']],
-                popup=folium.Popup(popup_text, max_width=300),
-                icon=folium.Icon(color='red', icon='info-sign')
-            ).add_to(m)
-        
-        # Add districts as blue circles
-        for idx, district in results_df.iterrows():
-            color = 'green' if district['improvement_minutes'] > 0 else 'blue'
-            popup_text = f"<b>{district['district']}</b><br>" \
-                        f"Tests per quarter: {district['tests_per_quarter']}<br>" \
-                        f"Current assignment: {district['current_assignment']}<br>" \
-                        f"Optimized assignment: {district['optimized_assignment']}<br>" \
-                        f"Time saved: {district['improvement_minutes']:.1f} minutes"
-            
-            folium.CircleMarker(
-                location=[district['district_lat'], district['district_lon']],
-                radius=8,
-                popup=folium.Popup(popup_text, max_width=300),
-                color=color,
-                fillColor=color,
-                fillOpacity=0.7
-            ).add_to(m)
-        
-        # Add lines for reassigned districts
-        reassigned = results_df[results_df['current_assignment'] != results_df['optimized_assignment']]
-        for idx, district in reassigned.iterrows():
-            lab_coords = cdst_df[cdst_df['lab_name'] == district['optimized_assignment']]
-            if not lab_coords.empty:
-                lab_coord = lab_coords.iloc[0]
-                folium.PolyLine(
-                    locations=[
-                        [district['district_lat'], district['district_lon']], 
-                        [lab_coord['lat'], lab_coord['lon']]
-                    ],
-                    color='green',
-                    weight=3,
-                    opacity=0.8,
-                    popup=f"New assignment: {district['district']} → {district['optimized_assignment']}"
-                ).add_to(m)
-        
-        return m._repr_html_()
-        
-    except Exception as e:
-        return f'<div class="alert alert-danger">Error generating map: {str(e)}</div>'
-
-@app.route('/export_results')
-def export_results():
-    """Export optimization results to CSV"""
-    if 'optimization_results' not in session:
-        return jsonify({'status': 'error', 'message': 'No results available'})
-    
-    try:
-        results_df = pd.read_json(session['optimization_results'])
-        utilization_df = pd.read_json(session['lab_utilization'])
-        
-        # Create a BytesIO object to store the zip file
-        zip_buffer = io.BytesIO()
-        
-        with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
-            # Add optimization results
-            results_csv = io.StringIO()
-            results_df.to_csv(results_csv, index=False)
-            zip_file.writestr('optimization_results.csv', results_csv.getvalue())
-            
-            # Add lab utilization
-            utilization_csv = io.StringIO()
-            utilization_df.to_csv(utilization_csv, index=False)
-            zip_file.writestr('lab_utilization.csv', utilization_csv.getvalue())
-            
-            # Add summary report
-            total_time_saved = results_df['improvement_minutes'].sum()
-            reassigned_count = len(results_df[results_df['current_assignment'] != results_df['optimized_assignment']])
-            avg_improvement = results_df['improvement_minutes'].mean()
-            
-            summary = f"""Diagnostic Network Optimization Results Summary
-Generated on: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
-
-Optimization Method: {session.get('optimization_method', 'Unknown')}
-Distance Calculation: {session.get('distance_method', 'Unknown')}
-
-Total Districts: {len(results_df)}
-Districts Reassigned: {reassigned_count} ({(reassigned_count/len(results_df)*100):.1f}%)
-Total Time Saved: {total_time_saved:.2f} minutes
-Average Time Saved per District: {avg_improvement:.2f} minutes
-
-Lab Utilization Summary:
-{utilization_df[['lab_name', 'current_utilization', 'optimized_utilization']].to_string(index=False)}
-"""
-            zip_file.writestr('summary_report.txt', summary)
-        
-        zip_buffer.seek(0)
-        
-        return send_file(
-            zip_buffer,
-            mimetype='application/zip',
-            as_attachment=True,
-            download_name=f'optimization_results_{datetime.now().strftime("%Y%m%d_%H%M%S")}.zip'
-        )
-        
-    except Exception as e:
-        return jsonify({'status': 'error', 'message': str(e)})
-
-@app.route('/get_lab_options')
-def get_lab_options():
-    """Get available CDST labs for isochrone dropdown"""
-    if 'cdst_data' not in session:
-        return jsonify({'status': 'error', 'message': 'No CDST data available. Please upload CDST lab data first.'})
-    
-    try:
-        cdst_df = pd.read_json(session['cdst_data'])
-        if cdst_df.empty:
-            return jsonify({'status': 'error', 'message': 'CDST data is empty'})
-        
-        labs = cdst_df['lab_name'].tolist()
-        return jsonify({'status': 'success', 'labs': labs})
-    except Exception as e:
-        return jsonify({'status': 'error', 'message': str(e)})
-
-@app.route('/generate_isochrone', methods=['POST'])
-def generate_isochrone():
-    """Generate isochrone map and analysis"""
-    try:
-        params = request.json
-        lab_name = params.get('lab_name')
-        method = params.get('method', 'euclidean')
-        travel_time = params.get('travel_time', 60)
-        
-        # Validate inputs
-        if not lab_name:
-            return jsonify({'status': 'error', 'message': 'Lab name is required'})
-        
-        if 'cdst_data' not in session or 'district_data' not in session:
-            return jsonify({'status': 'error', 'message': 'Lab and district data required'})
-        
-        cdst_df = pd.read_json(session['cdst_data'])
-        district_df = pd.read_json(session['district_data'])
-        
-        # Find the selected lab
-        lab_data = cdst_df[cdst_df['lab_name'] == lab_name]
-        if lab_data.empty:
-            return jsonify({'status': 'error', 'message': 'Lab not found'})
-        
-        lab_coords = (lab_data.iloc[0]['lat'], lab_data.iloc[0]['lon'])
-        
-        # Generate isochrone and map
-        if method == 'routing':
-            # Use hardcoded API key
-            map_html, districts_within = generate_routing_isochrone(
-                lab_coords, lab_name, travel_time, ORS_API_KEY, district_df, lab_data.iloc[0]
-            )
-        else:
-            map_html, districts_within = generate_euclidean_isochrone(
-                lab_coords, lab_name, travel_time, district_df, lab_data.iloc[0]
-            )
-        
-        # Create districts table
-        if districts_within:
-            districts_html = f"""
-            <div class="alert alert-success">
-                <strong>{len(districts_within)} districts</strong> are within {travel_time} minutes of {lab_name}
-            </div>
-            <table class="table table-striped table-sm">
-                <thead>
-                    <tr><th>District</th><th>Travel Time (min)</th><th>Tests/Quarter</th></tr>
-                </thead>
-                <tbody>
-            """
-            for district in districts_within:
-                districts_html += f"""
-                    <tr>
-                        <td>{district['name']}</td>
-                        <td>{district['travel_time']:.1f}</td>
-                        <td>{district['tests']}</td>
-                    </tr>
-                """
-            districts_html += "</tbody></table>"
-            
-            total_tests = sum(d['tests'] for d in districts_within)
-            districts_html += f"<p><strong>Total tests per quarter:</strong> {total_tests}</p>"
-        else:
-            districts_html = f'<div class="alert alert-warning">No districts found within {travel_time} minutes of {lab_name}</div>'
-        
-        return jsonify({
-            'status': 'success',
-            'map_html': map_html,
-            'districts_html': districts_html
-        })
-        
-    except Exception as e:
-        logger.log(f"Isochrone generation failed: {str(e)}", "ERROR")
-        return jsonify({'status': 'error', 'message': str(e)})
-
-def generate_euclidean_isochrone(lab_coords, lab_name, travel_time_minutes, district_df, lab_info):
-    """Generate euclidean distance-based isochrone"""
-    # Convert time to distance (assuming 30 km/h average speed)
-    max_distance_km = (travel_time_minutes / 60) * 30
-    
-    # Create map centered on the lab
-    m = folium.Map(location=lab_coords, zoom_start=8)
-    
-    # Add the lab marker
-    folium.Marker(
-        location=lab_coords,
-        popup=f"<b>{lab_name}</b><br>{lab_info['address']}<br>Capacity: {lab_info['capacity']}",
-        icon=folium.Icon(color='red', icon='info-sign')
-    ).add_to(m)
-    
-    # Draw isochrone circle
-    folium.Circle(
-        location=lab_coords,
-        radius=max_distance_km * 1000,  # Convert to meters
-        popup=f'{travel_time_minutes}-minute isochrone (Euclidean)',
-        color='blue',
-        fillColor='lightblue',
-        fillOpacity=0.3,
-        weight=2
-    ).add_to(m)
-    
-    # Check which districts are within the isochrone
-    districts_within = []
-    for idx, district in district_df.iterrows():
-        district_coords = (district['lat'], district['lon'])
-        distance_km = geodesic(lab_coords, district_coords).kilometers
-        travel_time = (distance_km / 30) * 60  # Convert to minutes
-        
-        if travel_time <= travel_time_minutes:
-            districts_within.append({
-                'name': district['district'],
-                'travel_time': travel_time,
-                'tests': district['tests_per_quarter']
-            })
-            
-            # Add district marker
-            folium.CircleMarker(
-                location=district_coords,
-                radius=6,
-                popup=f"<b>{district['district']}</b><br>Travel time: {travel_time:.1f} min<br>Tests: {district['tests_per_quarter']}",
-                color='green',
-                fillColor='lightgreen',
-                fillOpacity=0.7
-            ).add_to(m)
-    
-    return m._repr_html_(), districts_within
-
-def generate_routing_isochrone(lab_coords, lab_name, travel_time_minutes, api_key, district_df, lab_info):
-    """Generate routing-based isochrone using OpenRouteService"""
-    try:
-        # Get isochrone from ORS API
-        url = "https://api.openrouteservice.org/v2/isochrones/driving-car"
-        headers = {
-            'Authorization': api_key,
-            'Content-Type': 'application/json'
-        }
-        
-        body = {
-            "locations": [[lab_coords[1], lab_coords[0]]],  # ORS uses [lon, lat]
-            "range": [travel_time_minutes * 60],  # Convert to seconds
-            "range_type": "time"
-        }
-        
-        response = requests.post(url, headers=headers, json=body, timeout=30)
-        
-        if response.status_code != 200:
-            raise Exception(f"ORS API error: {response.status_code} - {response.text}")
-        
-        isochrone_data = response.json()
-        
-        # Create map
-        m = folium.Map(location=lab_coords, zoom_start=8)
-        
-        # Add the lab marker
-        folium.Marker(
-            location=lab_coords,
-            popup=f"<b>{lab_name}</b><br>{lab_info['address']}<br>Capacity: {lab_info['capacity']}",
-            icon=folium.Icon(color='red', icon='info-sign')
-        ).add_to(m)
-        
-        # Add isochrone polygon
-        if 'features' in isochrone_data and len(isochrone_data['features']) > 0:
-            feature = isochrone_data['features'][0]
-            if 'geometry' in feature and 'coordinates' in feature['geometry']:
-                coords = feature['geometry']['coordinates'][0]
-                # Convert from [lon, lat] to [lat, lon] for folium
-                folium_coords = [[coord[1], coord[0]] for coord in coords]
-                
-                folium.Polygon(
-                    locations=folium_coords,
-                    popup=f'{travel_time_minutes}-minute isochrone (Routing)',
-                    color='blue',
-                    fillColor='lightblue',
-                    fillOpacity=0.3,
-                    weight=2
-                ).add_to(m)
-        
-        # Check which districts are within the isochrone by calculating actual travel times
-        districts_within = []
-        for idx, district in district_df.iterrows():
-            district_coords = (district['lat'], district['lon'])
-            
-            # Calculate actual travel time using routing
-            travel_time = DistanceCalculator.openroute_service_time(
-                lab_coords, district_coords, api_key, delay=0.5
-            )
-            
-            if travel_time <= travel_time_minutes:
-                districts_within.append({
-                    'name': district['district'],
-                    'travel_time': travel_time,
-                    'tests': district['tests_per_quarter']
-                })
-                
-                # Add district marker
-                folium.CircleMarker(
-                    location=district_coords,
-                    radius=6,
-                    popup=f"<b>{district['district']}</b><br>Travel time: {travel_time:.1f} min<br>Tests: {district['tests_per_quarter']}",
-                    color='green',
-                    fillColor='lightgreen',
-                    fillOpacity=0.7
-                ).add_to(m)
-        
-        return m._repr_html_(), districts_within
-        
-    except Exception as e:
-        # Fallback to euclidean if routing fails
-        logger.log(f"Routing isochrone failed, falling back to euclidean: {str(e)}", "WARNING")
-        return generate_euclidean_isochrone(lab_coords, lab_name, travel_time_minutes, district_df, lab_info)
-
-# For Posit Connect deployment
-if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))
-    debug_mode = os.environ.get('FLASK_ENV') != 'production'
-    app.run(debug=debug_mode, host='0.0.0.0', port=port)
+    return render_template_string
