@@ -51,7 +51,7 @@ BASE_TEMPLATE = '''
     <title>Diagnostic Network Optimization</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <script src="https://cdn.plot.ly/plotly-2.24.1.min.js"></script>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
     <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.11.5/css/dataTables.bootstrap5.min.css">
     <style>
         body { background-color: #f4f4f4; }
@@ -392,7 +392,7 @@ MAP_CONTENT = '''
 </div>
 '''
 
-# Updated ISOCHRONE_CONTENT with refresh button
+# UPDATED ISOCHRONE_CONTENT - Removed download buttons
 ISOCHRONE_CONTENT = '''
 <h2><i class="fas fa-clock"></i> Isochrone Analysis</h2>
 <div class="row">
@@ -402,15 +402,9 @@ ISOCHRONE_CONTENT = '''
             <div class="card-body">
                 <div class="mb-3">
                     <label class="form-label">Select CDST Lab:</label>
-                    <div class="input-group">
-                        <select class="form-control" id="selectedLab">
-                            <option value="">Loading labs...</option>
-                        </select>
-                        <button class="btn btn-outline-secondary" type="button" id="refreshLabOptions">
-                            <i class="fas fa-refresh"></i>
-                        </button>
-                    </div>
-                    <small class="form-text text-muted">If no labs appear, ensure CDST data is uploaded first.</small>
+                    <select class="form-control" id="selectedLab">
+                        <option value="">Choose a lab...</option>
+                    </select>
                 </div>
                 <div class="mb-3">
                     <label class="form-label">Analysis Method:</label>
@@ -436,26 +430,12 @@ ISOCHRONE_CONTENT = '''
                 <div id="isochroneStatus" class="mt-3"></div>
             </div>
         </div>
-        
-        <!-- Debug Panel -->
-        <div class="card mt-3" id="debugPanel" style="display: none;">
-            <div class="card-header bg-info text-white">
-                <h6>Debug Information</h6>
-            </div>
-            <div class="card-body">
-                <div id="debugInfo" style="font-family: monospace; font-size: 12px;"></div>
-                <button class="btn btn-sm btn-info mt-2" id="showDebug">Show Debug Info</button>
-            </div>
-        </div>
     </div>
     <div class="col-md-8">
         <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <div>
-                    <h5 class="mb-1">Isochrone Map</h5>
-                    <p class="mb-0">Reachable areas within the specified travel time</p>
-                </div>
-
+            <div class="card-header">
+                <h5 class="mb-1">Isochrone Map</h5>
+                <p class="mb-0">Reachable areas within the specified travel time</p>
             </div>
             <div class="card-body">
                 <div id="isochroneMap" style="height: 600px;">
@@ -473,17 +453,11 @@ ISOCHRONE_CONTENT = '''
 <div class="row mt-4">
     <div class="col-12">
         <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="mb-0">Districts Within Isochrone</h5>
-                <button class="btn btn-outline-primary btn-sm" id="exportDistrictsTable" style="display: none;">
-                    <i class="fas fa-download"></i> Export Districts Data
-                </button>
-            </div>
+            <div class="card-header"><h5>Districts Within Isochrone</h5></div>
             <div class="card-body">
                 <div id="districtsInIsochrone">
                     <p class="text-muted">Generate an isochrone to see which districts fall within the specified travel time.</p>
                 </div>
-                <div id="exportStatus" class="mt-2"></div>
             </div>
         </div>
     </div>
@@ -1221,142 +1195,11 @@ $(document).ready(function() {
 </script>
 '''
 
-# Updated ISOCHRONE_CONTENT with refresh button
-ISOCHRONE_CONTENT = '''
-<h2><i class="fas fa-clock"></i> Isochrone Analysis</h2>
-<div class="row">
-    <div class="col-md-4">
-        <div class="card">
-            <div class="card-header"><h5>Isochrone Settings</h5></div>
-            <div class="card-body">
-                <div class="mb-3">
-                    <label class="form-label">Select CDST Lab:</label>
-                    <div class="input-group">
-                        <select class="form-control" id="selectedLab">
-                            <option value="">Loading labs...</option>
-                        </select>
-                        <button class="btn btn-outline-secondary" type="button" id="refreshLabOptions">
-                            <i class="fas fa-refresh"></i>
-                        </button>
-                    </div>
-                    <small class="form-text text-muted">If no labs appear, ensure CDST data is uploaded first.</small>
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">Analysis Method:</label>
-                    <div class="form-check">
-                        <input class="form-check-input" type="radio" name="isochrone_method" id="euclidean_iso" value="euclidean" checked>
-                        <label class="form-check-label" for="euclidean_iso">Euclidean Distance</label>
-                    </div>
-                    <div class="form-check">
-                        <input class="form-check-input" type="radio" name="isochrone_method" id="routing_iso" value="routing">
-                        <label class="form-check-label" for="routing_iso">Routing Isochrone (ORS API - Pre-configured)</label>
-                    </div>
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">Travel Time (minutes):</label>
-                    <input type="number" class="form-control" id="travelTime" value="60" min="5" max="300" step="5">
-                </div>
-                <div class="alert alert-success">
-                    <i class="fas fa-check-circle"></i> <strong>API Ready:</strong> OpenRouteService API is pre-configured and ready to use!
-                </div>
-                <button class="btn btn-primary" id="generateIsochrone">
-                    <i class="fas fa-map-marked-alt"></i> Generate Isochrone
-                </button>
-                <div id="isochroneStatus" class="mt-3"></div>
-            </div>
-        </div>
-        
-        <!-- Debug Panel -->
-        <div class="card mt-3" id="debugPanel" style="display: none;">
-            <div class="card-header bg-info text-white">
-                <h6>Debug Information</h6>
-            </div>
-            <div class="card-body">
-                <div id="debugInfo" style="font-family: monospace; font-size: 12px;"></div>
-                <button class="btn btn-sm btn-info mt-2" id="showDebug">Show Debug Info</button>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-8">
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <div>
-                    <h5 class="mb-1">Isochrone Map</h5>
-                    <p class="mb-0">Reachable areas within the specified travel time</p>
-                </div>
-                <div class="btn-group download-btn-group" role="group" style="display: none;" id="isochroneDownloadButtons">
-                    <div class="btn-group" role="group">
-                        <button type="button" class="btn btn-outline-light btn-sm dropdown-toggle" data-bs-toggle="dropdown">
-                            <i class="fas fa-download"></i> Download
-                        </button>
-                        <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="#" id="downloadIsochroneHtml">
-                                <i class="fas fa-file-code"></i> Interactive HTML Map
-                            </a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="#" id="exportIsochroneData">
-                                <i class="fas fa-table"></i> Export Analysis Data
-                            </a></li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-            <div class="card-body">
-                <div id="isochroneMap" style="height: 600px;">
-                    <div class="d-flex justify-content-center align-items-center h-100">
-                        <div class="text-center">
-                            <i class="fas fa-map-marked-alt fa-3x text-muted mb-3"></i>
-                            <p class="text-muted">Select a lab and generate an isochrone to view the map</p>
-                        </div>
-                    </div>
-                </div>
-                <div id="isochroneDownloadStatus" class="mt-2"></div>
-            </div>
-        </div>
-    </div>
-</div>
-<div class="row mt-4">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header"><h5>Districts Within Isochrone</h5></div>
-            <div class="card-body">
-                <div id="districtsInIsochrone">
-                    <p class="text-muted">Generate an isochrone to see which districts fall within the specified travel time.</p>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-'''
-
-# Enhanced ISOCHRONE_SCRIPTS with better error handling and debugging
+# UPDATED ISOCHRONE_SCRIPTS - Removed download functionality
 ISOCHRONE_SCRIPTS = '''
 <script>
 $(document).ready(function() {
-    console.log('Isochrone page loaded, initializing...');
     loadLabOptions();
-    
-    // Refresh lab options button
-    $('#refreshLabOptions').click(function() {
-        $('#refreshLabOptions').html('<i class="fas fa-spinner fa-spin"></i>');
-        $('#selectedLab').html('<option value="">Loading labs...</option>');
-        loadLabOptions();
-        setTimeout(function() {
-            $('#refreshLabOptions').html('<i class="fas fa-refresh"></i>');
-        }, 2000);
-    });
-    
-    // Debug panel toggle
-    $('#showDebug').click(function() {
-        if ($('#debugPanel').is(':visible')) {
-            $('#debugPanel').hide();
-            $('#showDebug').text('Show Debug Info');
-        } else {
-            loadDebugInfo();
-            $('#debugPanel').show();
-            $('#showDebug').text('Hide Debug Info');
-        }
-    });
     
     $('#generateIsochrone').click(function() {
         var selectedLab = $('#selectedLab').val();
@@ -1364,7 +1207,7 @@ $(document).ready(function() {
         var travelTime = parseInt($('#travelTime').val());
         
         if (!selectedLab) {
-            alert('Please select a CDST lab first. If no labs are available, ensure CDST data is uploaded in the Data Input section.');
+            alert('Please select a CDST lab');
             return;
         }
         
@@ -1376,337 +1219,43 @@ $(document).ready(function() {
         
         $('#generateIsochrone').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Generating...');
         $('#isochroneStatus').html('<div class="alert alert-info">Generating isochrone...</div>');
-        $('#exportDistrictsTable').hide();
         
         $.ajax({
             url: '/generate_isochrone',
             type: 'POST',
             contentType: 'application/json',
             data: JSON.stringify(params),
-            timeout: 60000, // 60 second timeout
             success: function(response) {
                 $('#generateIsochrone').prop('disabled', false).html('<i class="fas fa-map-marked-alt"></i> Generate Isochrone');
                 if (response.status === 'success') {
                     $('#isochroneMap').html(response.map_html);
                     $('#districtsInIsochrone').html(response.districts_html);
                     $('#isochroneStatus').html('<div class="alert alert-success">Isochrone generated successfully!</div>');
-                    
-                    // Show export button if districts were found
-                    if (response.districts_count && response.districts_count > 0) {
-                        $('#exportDistrictsTable').show();
-                    } else {
-                        $('#exportDistrictsTable').hide();
-                    }
-                    
-                    // Store current isochrone parameters for export
-                    window.currentIsochroneParams = params;
                 } else {
                     $('#isochroneStatus').html('<div class="alert alert-danger">Error: ' + response.message + '</div>');
                 }
             },
-            error: function(xhr, status, error) {
+            error: function() {
                 $('#generateIsochrone').prop('disabled', false).html('<i class="fas fa-map-marked-alt"></i> Generate Isochrone');
-                var errorMsg = 'Connection error. Please try again.';
-                if (status === 'timeout') {
-                    errorMsg = 'Request timed out. Try using Euclidean distance for faster processing.';
-                }
-                $('#isochroneStatus').html('<div class="alert alert-danger">' + errorMsg + '</div>');
-            }
-        });
-    });
-    
-    // Export Districts Table
-    $('#exportDistrictsTable').click(function(e) {
-        e.preventDefault();
-        if (!window.currentIsochroneParams) {
-            alert('Please generate an isochrone first');
-            return;
-        }
-        
-        $('#exportDistrictsTable').html('<i class="fas fa-spinner fa-spin"></i> Exporting...');
-        $('#exportStatus').html('<div class="alert alert-info">Preparing districts data export...</div>');
-        
-        $.ajax({
-            url: '/export_districts_within_isochrone',
-            type: 'POST',
-            contentType: 'application/json',
-            data: JSON.stringify(window.currentIsochroneParams),
-            success: function(response) {
-                if (response.download_url) {
-                    window.location.href = response.download_url;
-                    $('#exportStatus').html('<div class="alert alert-success">Districts data exported! Check your downloads folder.</div>');
-                } else {
-                    $('#exportStatus').html('<div class="alert alert-danger">Export failed: ' + response.message + '</div>');
-                }
-                $('#exportDistrictsTable').html('<i class="fas fa-download"></i> Export Districts Data');
-                
-                setTimeout(function() {
-                    $('#exportStatus').html('');
-                }, 3000);
-            },
-            error: function() {
-                $('#exportDistrictsTable').html('<i class="fas fa-download"></i> Export Districts Data');
-                $('#exportStatus').html('<div class="alert alert-danger">Export failed. Please try again.</div>');
-                setTimeout(function() {
-                    $('#exportStatus').html('');
-                }, 3000);
-            }
-        });
-    });
-
-    // HTML Download with direct file download
-    $('#downloadIsochroneHtml').click(function(e) {
-        e.preventDefault();
-        if (!window.currentIsochroneParams) {
-            alert('Please generate an isochrone first');
-            return;
-        }
-        
-        $('#downloadIsochroneHtml').html('<i class="fas fa-spinner fa-spin"></i> Generating...');
-        $('#isochroneDownloadStatus').html('<div class="alert alert-info">Preparing isochrone map download...</div>');
-        
-        $.ajax({
-            url: '/download_isochrone_map',
-            type: 'POST',
-            contentType: 'application/json',
-            data: JSON.stringify(window.currentIsochroneParams),
-            xhrFields: {
-                responseType: 'blob'
-            },
-            success: function(data, textStatus, xhr) {
-                // Create blob and download
-                var blob = new Blob([data], { type: 'text/html' });
-                var url = window.URL.createObjectURL(blob);
-                var a = document.createElement('a');
-                a.style.display = 'none';
-                a.href = url;
-                
-                // Extract filename from response or create default
-                var disposition = xhr.getResponseHeader('Content-Disposition');
-                var filename = 'isochrone_map.html';
-                if (disposition) {
-                    try {
-                        var filenameRegex = /filename[^;=\\n]*=(['"]?)([^;\\n]*?)\\1/;
-                        var filenameMatch = disposition.match(filenameRegex);
-                        if (filenameMatch && filenameMatch[2]) {
-                            filename = filenameMatch[2];
-                        }
-                    } catch (e) {
-                        console.log('Could not parse filename from header, using default');
-                    }
-                }
-                a.download = filename;
-                
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                window.URL.revokeObjectURL(url);
-                
-                $('#isochroneDownloadStatus').html('<div class="alert alert-success">Isochrone map downloaded! Check your downloads folder.</div>');
-                $('#downloadIsochroneHtml').html('<i class="fas fa-file-code"></i> Interactive HTML Map');
-                
-                setTimeout(function() {
-                    $('#isochroneDownloadStatus').html('');
-                }, 3000);
-            },
-            error: function(xhr, status, error) {
-                var errorMessage = 'Download failed. Please try again.';
-                if (xhr.responseText) {
-                    try {
-                        var errorResponse = JSON.parse(xhr.responseText);
-                        errorMessage = errorResponse.message || errorMessage;
-                    } catch (e) {
-                        // Use default error message
-                    }
-                }
-                
-                $('#downloadIsochroneHtml').html('<i class="fas fa-file-code"></i> Interactive HTML Map');
-                $('#isochroneDownloadStatus').html('<div class="alert alert-danger">' + errorMessage + '</div>');
-                
-                setTimeout(function() {
-                    $('#isochroneDownloadStatus').html('');
-                }, 3000);
-            }
-        });
-    });
-    
-    // Export Isochrone Data
-    $('#exportIsochroneData').click(function(e) {
-        e.preventDefault();
-        if (!window.currentIsochroneParams) {
-            alert('Please generate an isochrone first');
-            return;
-        }
-        
-        $('#exportIsochroneData').html('<i class="fas fa-spinner fa-spin"></i> Exporting...');
-        
-        $.ajax({
-            url: '/export_isochrone_data',
-            type: 'POST',
-            contentType: 'application/json',
-            data: JSON.stringify(window.currentIsochroneParams),
-            success: function(response) {
-                if (response.download_url) {
-                    window.location.href = response.download_url;
-                    $('#isochroneDownloadStatus').html('<div class="alert alert-success">Isochrone data exported! Check your downloads folder.</div>');
-                } else {
-                    $('#isochroneDownloadStatus').html('<div class="alert alert-danger">Export failed: ' + response.message + '</div>');
-                }
-                $('#exportIsochroneData').html('<i class="fas fa-table"></i> Export Analysis Data');
-                
-                setTimeout(function() {
-                    $('#isochroneDownloadStatus').html('');
-                }, 3000);
-            },
-            error: function() {
-                $('#exportIsochroneData').html('<i class="fas fa-table"></i> Export Analysis Data');
-                $('#isochroneDownloadStatus').html('<div class="alert alert-danger">Export failed. Please try again.</div>');
-                setTimeout(function() {
-                    $('#isochroneDownloadStatus').html('');
-                }, 3000);
+                $('#isochroneStatus').html('<div class="alert alert-danger">Connection error. Please try again.</div>');
             }
         });
     });
     
     function loadLabOptions() {
-        console.log('Loading lab options...');
-        
-        $.ajax({
-            url: '/get_lab_options',
-            type: 'GET',
-            timeout: 10000,
-            success: function(data) {
-                console.log('Lab options response:', data);
-                
-                if (data.status === 'success') {
-                    if (data.labs && data.labs.length > 0) {
-                        var options = '<option value="">Choose a lab...</option>';
-                        data.labs.forEach(function(lab) {
-                            options += '<option value="' + lab + '">' + lab + '</option>';
-                        });
-                        $('#selectedLab').html(options);
-                        console.log('Lab options populated:', data.labs.length, 'labs found');
-                        
-                        // Clear any previous error messages
-                        if ($('#isochroneStatus .alert-warning').length > 0) {
-                            $('#isochroneStatus').html('');
-                        }
-                    } else {
-                        $('#selectedLab').html('<option value="">No labs found</option>');
-                        $('#isochroneStatus').html('<div class="alert alert-warning"><strong>No CDST labs found.</strong><br>Please ensure CDST lab data is uploaded with valid lab names.</div>');
-                    }
-                } else {
-                    $('#selectedLab').html('<option value="">Error: ' + data.message + '</option>');
-                    console.error('Lab options error:', data.message);
-                    
-                    // Show user-friendly error message
-                    $('#isochroneStatus').html('<div class="alert alert-warning"><strong>No CDST data available.</strong><br>Please upload CDST lab data in the <a href="/data_input">Data Input</a> section first.</div>');
-                }
-            },
-            error: function(xhr, status, error) {
-                console.error('AJAX error loading lab options:', status, error);
-                $('#selectedLab').html('<option value="">Connection error - please refresh</option>');
-                $('#isochroneStatus').html('<div class="alert alert-danger">Error loading lab data. Please refresh the page and ensure CDST data is uploaded.</div>');
+        $.get('/get_lab_options', function(data) {
+            if (data.status === 'success') {
+                var options = '<option value="">Choose a lab...</option>';
+                data.labs.forEach(function(lab) {
+                    options += '<option value="' + lab + '">' + lab + '</option>';
+                });
+                $('#selectedLab').html(options);
             }
         });
     }
-    
-    function loadDebugInfo() {
-        $.ajax({
-            url: '/debug_session',
-            type: 'GET',
-            success: function(data) {
-                var debugText = 'Session Keys: ' + JSON.stringify(data.session_keys, null, 2) + '\\n\\n';
-                debugText += 'Session Info: ' + JSON.stringify(data.session_info, null, 2);
-                $('#debugInfo').text(debugText);
-            },
-            error: function() {
-                $('#debugInfo').text('Could not load debug information');
-            }
-        });
-    }
-    
-    // Auto-retry loading labs if initially failed
-    setTimeout(function() {
-        if ($('#selectedLab option').length <= 1) {
-            console.log('No labs loaded, retrying...');
-            loadLabOptions();
-        }
-    }, 2000);
 });
 </script>
 '''
-   
-# Enhanced backend route with better error handling
-@app.route('/get_lab_options')
-def get_lab_options():
-    """Get available CDST labs for isochrone dropdown with enhanced debugging"""
-    try:
-        # Check if session has CDST data
-        if 'cdst_data' not in session:
-            return jsonify({
-                'status': 'error', 
-                'message': 'No CDST data in session. Please upload CDST lab data first.',
-                'session_keys': list(session.keys())
-            })
-        
-        # Try to read the CDST data
-        cdst_json = session['cdst_data']
-        if not cdst_json or cdst_json == 'null':
-            return jsonify({
-                'status': 'error', 
-                'message': 'CDST data is empty or null',
-                'session_keys': list(session.keys())
-            })
-        
-        # Parse the JSON data
-        cdst_df = pd.read_json(cdst_json)
-        if cdst_df.empty:
-            return jsonify({
-                'status': 'error', 
-                'message': 'CDST dataframe is empty after parsing',
-                'session_keys': list(session.keys())
-            })
-        
-        # Check if lab_name column exists
-        if 'lab_name' not in cdst_df.columns:
-            return jsonify({
-                'status': 'error', 
-                'message': f'lab_name column not found. Available columns: {list(cdst_df.columns)}',
-                'columns': list(cdst_df.columns)
-            })
-        
-        # Get lab names and filter out any null values
-        labs = cdst_df['lab_name'].dropna().tolist()
-        labs = [lab for lab in labs if lab and str(lab).strip()]  # Remove empty strings
-        
-        if not labs:
-            return jsonify({
-                'status': 'error', 
-                'message': 'No valid lab names found in CDST data',
-                'raw_lab_count': len(cdst_df),
-                'sample_data': cdst_df.head(3).to_dict('records') if len(cdst_df) > 0 else []
-            })
-        
-        return jsonify({
-            'status': 'success', 
-            'labs': labs,
-            'lab_count': len(labs)
-        })
-        
-    except json.JSONDecodeError as e:
-        return jsonify({
-            'status': 'error', 
-            'message': f'JSON decode error: {str(e)}',
-            'error_type': 'json_decode'
-        })
-    except Exception as e:
-        return jsonify({
-            'status': 'error', 
-            'message': f'Unexpected error: {str(e)}',
-            'error_type': 'general'
-        })
-
 
 # OPTIMIZATION AND UTILITY CLASSES
 class OptimizationLogger:
@@ -2867,7 +2416,22 @@ Lab Utilization Summary:
     except Exception as e:
         return jsonify({'status': 'error', 'message': str(e)})
 
-# Updated generate_isochrone route
+@app.route('/get_lab_options')
+def get_lab_options():
+    """Get available CDST labs for isochrone dropdown"""
+    if 'cdst_data' not in session:
+        return jsonify({'status': 'error', 'message': 'No CDST data available. Please upload CDST lab data first.'})
+    
+    try:
+        cdst_df = pd.read_json(session['cdst_data'])
+        if cdst_df.empty:
+            return jsonify({'status': 'error', 'message': 'CDST data is empty'})
+        
+        labs = cdst_df['lab_name'].tolist()
+        return jsonify({'status': 'success', 'labs': labs})
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)})
+
 @app.route('/generate_isochrone', methods=['POST'])
 def generate_isochrone():
     """Generate isochrone map and analysis"""
@@ -2904,242 +2468,42 @@ def generate_isochrone():
                 lab_coords, lab_name, travel_time, district_df, lab_data.iloc[0]
             )
         
-        # Create enhanced districts table with better formatting
+        # Create districts table
         if districts_within:
             districts_html = f"""
             <div class="alert alert-success">
                 <strong>{len(districts_within)} districts</strong> are within {travel_time} minutes of {lab_name}
             </div>
-            <div class="table-responsive">
-                <table class="table table-striped table-sm">
-                    <thead class="table-dark">
-                        <tr>
-                            <th>District</th>
-                            <th>Travel Time (min)</th>
-                            <th>Tests/Quarter</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody>
+            <table class="table table-striped table-sm">
+                <thead>
+                    <tr><th>District</th><th>Travel Time (min)</th><th>Tests/Quarter</th></tr>
+                </thead>
+                <tbody>
             """
-            
-            # Sort districts by travel time
-            districts_within_sorted = sorted(districts_within, key=lambda x: x['travel_time'])
-            
-            for district in districts_within_sorted:
-                status_badge = '<span class="badge bg-success">Within Range</span>'
+            for district in districts_within:
                 districts_html += f"""
                     <tr>
-                        <td><strong>{district['name']}</strong></td>
+                        <td>{district['name']}</td>
                         <td>{district['travel_time']:.1f}</td>
-                        <td>{district['tests']:,}</td>
-                        <td>{status_badge}</td>
+                        <td>{district['tests']}</td>
                     </tr>
                 """
-            districts_html += "</tbody></table></div>"
+            districts_html += "</tbody></table>"
             
             total_tests = sum(d['tests'] for d in districts_within)
-            avg_travel_time = sum(d['travel_time'] for d in districts_within) / len(districts_within)
-            
-            districts_html += f"""
-            <div class="row mt-3">
-                <div class="col-md-3">
-                    <div class="card bg-light">
-                        <div class="card-body text-center">
-                            <h6 class="card-title">Total Tests</h6>
-                            <h4 class="text-primary">{total_tests:,}</h4>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="card bg-light">
-                        <div class="card-body text-center">
-                            <h6 class="card-title">Avg Travel Time</h6>
-                            <h4 class="text-info">{avg_travel_time:.1f} min</h4>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="card bg-light">
-                        <div class="card-body text-center">
-                            <h6 class="card-title">Lab Capacity</h6>
-                            <h4 class="text-warning">{lab_data.iloc[0]['capacity']:,}</h4>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="card bg-light">
-                        <div class="card-body text-center">
-                            <h6 class="card-title">Capacity Usage</h6>
-                            <h4 class="{'text-success' if total_tests <= lab_data.iloc[0]['capacity'] else 'text-danger'}">{(total_tests/lab_data.iloc[0]['capacity']*100):.1f}%</h4>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            """
+            districts_html += f"<p><strong>Total tests per quarter:</strong> {total_tests}</p>"
         else:
             districts_html = f'<div class="alert alert-warning">No districts found within {travel_time} minutes of {lab_name}</div>'
         
         return jsonify({
             'status': 'success',
             'map_html': map_html,
-            'districts_html': districts_html,
-            'districts_count': len(districts_within) if districts_within else 0
+            'districts_html': districts_html
         })
         
     except Exception as e:
         logger.log(f"Isochrone generation failed: {str(e)}", "ERROR")
         return jsonify({'status': 'error', 'message': str(e)})
-
-# New route for exporting districts within isochrone
-@app.route('/export_districts_within_isochrone', methods=['POST'])
-def export_districts_within_isochrone():
-    """Export districts within isochrone as CSV"""
-    try:
-        params = request.json
-        lab_name = params.get('lab_name')
-        method = params.get('method', 'euclidean')
-        travel_time = params.get('travel_time', 60)
-        
-        if not lab_name or 'cdst_data' not in session or 'district_data' not in session:
-            return jsonify({'status': 'error', 'message': 'Required data not available'})
-        
-        cdst_df = pd.read_json(session['cdst_data'])
-        district_df = pd.read_json(session['district_data'])
-        
-        # Find the selected lab
-        lab_data = cdst_df[cdst_df['lab_name'] == lab_name]
-        if lab_data.empty:
-            return jsonify({'status': 'error', 'message': 'Lab not found'})
-        
-        lab_coords = (lab_data.iloc[0]['lat'], lab_data.iloc[0]['lon'])
-        lab_info = lab_data.iloc[0]
-        
-        # Calculate which districts are within the isochrone
-        districts_analysis = []
-        districts_within = []
-        
-        for idx, district in district_df.iterrows():
-            district_coords = (district['lat'], district['lon'])
-            
-            if method == 'routing':
-                travel_time_actual = DistanceCalculator.openroute_service_time(
-                    lab_coords, district_coords, ORS_API_KEY, delay=0.2
-                )
-                distance_km = geodesic(lab_coords, district_coords).kilometers
-            else:
-                distance_km = geodesic(lab_coords, district_coords).kilometers
-                travel_time_actual = (distance_km / 30) * 60  # 30 km/h average
-            
-            within_range = travel_time_actual <= travel_time
-            
-            districts_analysis.append({
-                'District_Name': district['district'],
-                'District_Latitude': district['lat'],
-                'District_Longitude': district['lon'],
-                'Travel_Time_Minutes': round(travel_time_actual, 2),
-                'Distance_Km': round(distance_km, 2),
-                'Within_Isochrone': 'Yes' if within_range else 'No',
-                'Tests_Per_Quarter': district['tests_per_quarter'],
-                'Current_CDST_Assignment': district['current_cdst'],
-                'Analysis_Lab': lab_name,
-                'Travel_Time_Threshold': travel_time,
-                'Analysis_Method': method.replace('_', ' ').title()
-            })
-            
-            if within_range:
-                districts_within.append({
-                    'name': district['district'],
-                    'travel_time': travel_time_actual,
-                    'tests': district['tests_per_quarter']
-                })
-        
-        # Filter only districts within isochrone for main export
-        within_isochrone_df = pd.DataFrame([d for d in districts_analysis if d['Within_Isochrone'] == 'Yes'])
-        
-        if within_isochrone_df.empty:
-            return jsonify({'status': 'error', 'message': f'No districts found within {travel_time} minutes of {lab_name}'})
-        
-        # Create summary statistics
-        total_tests_within = within_isochrone_df['Tests_Per_Quarter'].sum()
-        avg_travel_time = within_isochrone_df['Travel_Time_Minutes'].mean()
-        avg_distance = within_isochrone_df['Distance_Km'].mean()
-        
-        # Create summary row
-        summary_data = {
-            'Lab_Name': lab_name,
-            'Lab_Address': lab_info['address'],
-            'Lab_Capacity': lab_info['capacity'],
-            'Lab_Latitude': lab_info['lat'],
-            'Lab_Longitude': lab_info['lon'],
-            'Analysis_Method': method.replace('_', ' ').title(),
-            'Travel_Time_Threshold_Minutes': travel_time,
-            'Districts_Within_Range': len(within_isochrone_df),
-            'Total_Tests_Within_Range': total_tests_within,
-            'Average_Travel_Time_Minutes': round(avg_travel_time, 2),
-            'Average_Distance_Km': round(avg_distance, 2),
-            'Capacity_Utilization_Percent': round((total_tests_within / lab_info['capacity']) * 100, 1) if lab_info['capacity'] > 0 else 0,
-            'Generated_On': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        }
-        
-        # Create zip file with multiple sheets
-        zip_buffer = io.BytesIO()
-        
-        with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
-            # Add districts within isochrone
-            districts_csv = io.StringIO()
-            within_isochrone_df.to_csv(districts_csv, index=False)
-            zip_file.writestr('districts_within_isochrone.csv', districts_csv.getvalue())
-            
-            # Add summary information
-            summary_df = pd.DataFrame([summary_data])
-            summary_csv = io.StringIO()
-            summary_df.to_csv(summary_csv, index=False)
-            zip_file.writestr('analysis_summary.csv', summary_csv.getvalue())
-            
-            # Add README
-            readme_content = f"""Districts Within Isochrone - Export
-Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
-
-Analysis Details:
-- Lab Analyzed: {lab_name}
-- Travel Time Threshold: {travel_time} minutes
-- Analysis Method: {method.replace('_', ' ').title()}
-- Districts Found Within Range: {len(within_isochrone_df)}
-
-Files Included:
-1. districts_within_isochrone.csv - Detailed list of districts within the travel time threshold
-2. analysis_summary.csv - Summary statistics and lab information
-
-Summary Statistics:
-- Total districts within {travel_time} minutes: {len(within_isochrone_df)}
-- Total quarterly tests from these districts: {total_tests_within:,}
-- Average travel time: {avg_travel_time:.1f} minutes
-- Average distance: {avg_distance:.1f} km
-- Lab capacity utilization: {(total_tests_within / lab_info['capacity']) * 100:.1f}%
-
-Method Details:
-- {method.replace('_', ' ').title()}: {"Real road routing using OpenRouteService API" if method == "routing" else "Euclidean distance calculation with 30 km/h average speed"}
-"""
-            zip_file.writestr('README.txt', readme_content)
-        
-        zip_buffer.seek(0)
-        
-        # Generate filename
-        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-        safe_lab_name = "".join(c for c in lab_name if c.isalnum() or c in (' ', '-', '_')).rstrip()
-        filename = f'districts_within_{travel_time}min_{safe_lab_name}_{timestamp}.zip'
-        
-        return send_file(
-            zip_buffer,
-            mimetype='application/zip',
-            as_attachment=True,
-            download_name=filename
-        )
-        
-    except Exception as e:
-        logger.log(f"Districts export failed: {str(e)}", "ERROR")
-        return jsonify({'status': 'error', 'message': f'Export failed: {str(e)}'})
 
 def generate_euclidean_isochrone(lab_coords, lab_name, travel_time_minutes, district_df, lab_info):
     """Generate euclidean distance-based isochrone"""
